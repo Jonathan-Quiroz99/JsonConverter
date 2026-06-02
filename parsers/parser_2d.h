@@ -2,76 +2,77 @@
 #define PARSER_2D_H
 
 #include "base_parser.h"
+#include "../detectors/inspection_result.h"
+#include <fstream>
 
-using namespace std;
-
-class Parser2D : public BaseParser {
+class Parser2D : public BaseParser
+{
 public:
-    Parser2D(const string& path, function<void(const string&)> callback = nullptr)
-        : BaseParser(path, callback) {
+
+    Parser2D(
+        const std::string& path,
+        const InspectionResult& inspection,
+        std::function<void(const std::string&)> callback = nullptr)
+        :
+        BaseParser(path, callback),
+        inspection_info(inspection)
+    {
     }
 
-    ParsedData parse() override {
-        log("  Parsing as 2D data");
+    ParsedData parse() override
+    {
+        log("Parsing 2D file");
 
         ParsedData result;
-        result.filename = filename;
-        result.type = FileType::TIME_SERIES_2D;
 
-        ifstream file(filepath);
-        if (!file.is_open()) {
-            log("  Error opening file");
+        result.filename = filename;
+        result.type = inspection_info.type;
+        result.data_type = inspection_info.data_type;
+        result.plot_type = inspection_info.metadata.count("plot_type") ? inspection_info.metadata.at("plot_type") : std::string("scatter");
+        result.metadata = inspection_info.metadata;
+
+        std::ifstream file(filepath);
+
+        if (!file.is_open())
+        {
+            log("Failed opening file");
             return result;
         }
 
-        vector<string> lines;
-        string line;
-        while (getline(file, line)) {
-            if (!line.empty()) {
-                lines.push_back(line);
+        // skip header lines if any
+        std::string line;
+        for (int i = 0; i < inspection_info.header_lines; ++i)
+        {
+            if (!std::getline(file, line)) break;
+        }
+
+        // read numeric pairs / rows
+        while (std::getline(file, line))
+        {
+            std::vector<double> row;
+            if (parse_numeric_line(line, row))
+            {
+                result.numeric_data.push_back(row);
             }
         }
+
         file.close();
 
-        // Detect data type from headers
-        string data_type = "generic_2d";
-        vector<string> headers;
-        vector<string> units;
+        result.shape.rows = result.numeric_data.size();
+        result.shape.cols = result.numeric_data.empty() ? 0 : result.numeric_data[0].size();
+        result.shape.is_matrix = (result.shape.rows > 0 && result.shape.cols > 0 && result.shape.rows > 1 && result.shape.cols > 1 && result.shape.cols != 2);
+        result.shape.layout = (result.shape.cols == 2) ? "2d" : "matrix";
 
-        for (size_t i = 0; i < min(lines.size(), size_t(10)); i++) {
-            string upper_line = lines[i];
-            transform(upper_line.begin(), upper_line.end(), upper_line.begin(), ::toupper);
-
-            if (upper_line.find("PISTON POSITION") != string::npos) {
-                data_type = "piston_position";
-                log("  Detected type: Piston Position");
-            }
-            else if (upper_line.find("PISTON VELOCITY") != string::npos) {
-                data_type = "piston_velocity";
-                log("  Detected type: Piston Velocity");
-            }
-            else if (upper_line.find("PISTON ACCELERATION") != string::npos) {
-                data_type = "piston_acceleration";
-                log("  Detected type: Piston Acceleration");
-            }
-        }
-
-        // Extract numeric data
-        result.numeric_data = extract_numeric_data(true);
-        result.data_type = data_type;
-        result.headers = headers;
-        result.units = units;
-
-        if (!result.numeric_data.empty()) {
-            log("  Numeric rows: " + to_string(result.numeric_data.size()));
-            log("  Columns per row: " + to_string(result.numeric_data[0].size()));
-        }
-        else {
-            log("  WARNING: No numeric data extracted");
-        }
+        log("Rows: " + std::to_string(result.shape.rows));
+        log("Cols: " + std::to_string(result.shape.cols));
+        log("Data type: " + result.data_type);
 
         return result;
     }
+
+private:
+
+    InspectionResult inspection_info;
 };
 
 #endif // PARSER_2D_H

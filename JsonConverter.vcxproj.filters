@@ -55,6 +55,30 @@
     <ClInclude Include="utils\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="detectors\inspection_result.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsers\parser_surface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="registry\parser_registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsers\parser_heatmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsers\matrix_parser_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="classifiers\rule_engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="classifiers\classification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="classifiers\ClassificationResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

@@ -1,116 +1,201 @@
-#ifndef BASE_PARSER_H
-#define BASE_PARSER_H
+#pragma once
 
 #include <string>
 #include <vector>
 #include <fstream>
-#include <regex>
-#include <functional>
-#include <map>
-#include <algorithm>
 #include <sstream>
+#include <functional>
+#include <algorithm>
+
 #include "../config/config.h"
 
-class BaseParser {
+class BaseParser
+{
 protected:
-    std::string filepath;
-    std::string filename;
-    std::function<void(const std::string&)> log_callback;
 
-    void log(const std::string& msg) {
-        if (log_callback) {
+    std::string filepath;
+
+    std::string filename;
+
+    std::function<void(const std::string&)>
+        log_callback;
+
+    void log(const std::string& msg)
+    {
+        if (log_callback)
+        {
             log_callback(msg);
         }
     }
 
 public:
-    BaseParser(const std::string& path, std::function<void(const std::string&)> callback = nullptr)
-        : filepath(path), log_callback(callback) {
-        // Extract filename from path
-        size_t pos = path.find_last_of("/\\");
-        filename = (pos != std::string::npos) ? path.substr(pos + 1) : path;
+
+    BaseParser(
+        const std::string& path,
+        std::function<void(const std::string&)>
+        callback = nullptr)
+
+        : filepath(path),
+        log_callback(callback)
+    {
+        size_t pos =
+            path.find_last_of("/\\");
+
+        filename =
+            (pos != std::string::npos)
+            ? path.substr(pos + 1)
+            : path;
     }
 
     virtual ParsedData parse() = 0;
 
-    // Common helper: extract numeric data
-    std::vector<std::vector<double>> extract_numeric_data(bool skip_header = true,
-        int max_lines = -1) {
-        std::vector<std::vector<double>> numeric_data;
+protected:
+
+    // ===== FAST NUMERIC LINE PARSER (original returning vector) =====
+
+    static std::vector<double> parse_numeric_line(
+        const std::string& line)
+    {
+        std::vector<double> row;
+
+        // ===== CLEAN LINE =====
+
+        std::string cleaned = line;
+
+        for (char& c : cleaned)
+        {
+            // Replace commas with spaces
+            if (c == ',')
+            {
+                c = ' ';
+            }
+
+            // FORTRAN scientific notation
+            if (c == 'D' || c == 'd')
+            {
+                c = 'E';
+            }
+        }
+
+        // ===== PARSE =====
+
+        std::stringstream ss(cleaned);
+
+        double value;
+
+        while (ss >> value)
+        {
+            row.push_back(value);
+        }
+
+        return row;
+    }
+
+    // ===== OVERLOAD: fill provided vector and return success =====
+
+    static bool parse_numeric_line(
+        const std::string& line,
+        std::vector<double>& outRow)
+    {
+        outRow = parse_numeric_line(line);
+        return !outRow.empty();
+    }
+
+    // ===== STREAM PARSE =====
+
+    std::vector<std::vector<double>>
+        extract_numeric_data(
+            int skip_lines = 0,
+            int max_lines = -1)
+    {
+        std::vector<std::vector<double>>
+            numeric_data;
 
         std::ifstream file(filepath);
-        if (!file.is_open()) {
-            log("  Error opening file for numeric extraction");
+
+        if (!file.is_open())
+        {
+            log("Failed opening file");
+
             return numeric_data;
         }
 
-        std::vector<std::string> lines;
         std::string line;
-        while (std::getline(file, line)) {
-            lines.push_back(line);
-        }
-        file.close();
 
-        // Find data start
-        size_t start_idx = 0;
-        if (skip_header) {
-            std::regex num_re(R"([-+]?\d*\.?\d+(?:[eEdD][-+]?\d+)?)");
-            for (size_t i = 0; i < std::min(lines.size(), size_t(50)); i++) {
-                if (std::regex_search(lines[i], num_re)) {
-                    start_idx = i;
-                    break;
-                }
+        // ===== SKIP HEADER =====
+
+        for (int i = 0; i < skip_lines; i++)
+        {
+            if (!std::getline(file, line))
+            {
+                return numeric_data;
             }
         }
 
-        // Process lines
-        int line_count = 0;
-        std::regex num_pattern(R"([-+]?\d*\.?\d+(?:[eEdD][-+]?\d+)?)");
+        int lines_read = 0;
 
-        for (size_t i = start_idx; i < lines.size(); i++) {
-            if (max_lines > 0 && line_count >= max_lines) break;
+        // ===== STREAM READ =====
 
-            auto words_begin = std::sregex_iterator(lines[i].begin(), lines[i].end(), num_pattern);
-            auto words_end = std::sregex_iterator();
+        while (std::getline(file, line))
+        {
+            if (max_lines > 0 &&
+                lines_read >= max_lines)
+            {
+                break;
+            }
 
             std::vector<double> row;
-            for (auto it = words_begin; it != words_end; ++it) {
-                try {
-                    std::string num_str = it->str();
-                    for (char& c : num_str) {
-                        if (c == 'D' || c == 'd') c = 'e';
-                    }
-                    row.push_back(std::stod(num_str));
-                }
-                catch (...) {
-                    continue;
-                }
-            }
 
-            if (!row.empty()) {
-                numeric_data.push_back(row);
-                line_count++;
+            if (parse_numeric_line(line, row))
+            {
+                numeric_data.push_back(
+                    std::move(row));
+
+                lines_read++;
             }
         }
 
         return numeric_data;
     }
 
-    // Find section boundaries
-    std::map<std::string, int> find_section_boundaries(const std::vector<std::string>& lines,
-        const std::vector<std::string>& patterns) {
-        std::map<std::string, int> sections;
-        for (size_t i = 0; i < lines.size(); i++) {
-            for (const auto& pattern : patterns) {
-                std::regex re(pattern, std::regex::icase);
-                if (std::regex_search(lines[i], re)) {
-                    sections[lines[i]] = static_cast<int>(i);
-                    break;
-                }
-            }
-        }
-        return sections;
+    // ===== SIMPLE TEXT MATCH =====
+
+    static bool contains(
+        const std::string& text,
+        const std::string& token)
+    {
+        return text.find(token)
+            != std::string::npos;
+    }
+
+    // ===== UPPERCASE =====
+
+    static std::string to_upper(
+        std::string s)
+    {
+        std::transform(
+            s.begin(),
+            s.end(),
+            s.begin(),
+            ::toupper);
+
+        return s;
+    }
+
+    // ===== TRIM =====
+
+    static std::string trim(
+        std::string s)
+    {
+        s.erase(
+            0,
+            s.find_first_not_of(
+                " \t\r\n"));
+
+        s.erase(
+            s.find_last_not_of(
+                " \t\r\n") + 1);
+
+        return s;
     }
 };
-
-#endif // BASE_PARSER_H

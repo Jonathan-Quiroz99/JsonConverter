@@ -1,403 +1,568 @@
 #ifndef JSON_BUILDER_H
 #define JSON_BUILDER_H
 
-#include <string>
 #include <sstream>
-#include <functional>
-#include <vector>
-#include <map>
 #include <iomanip>
-#include <cctype>
+#include <functional>
+
 #include "../config/config.h"
 
-class JsonBuilder {
+class JsonBuilder
+{
 public:
-    static std::string build(const ParsedData& data,
-        std::function<void(const std::string&)> log_callback = nullptr) {
 
-        auto log = [&](const std::string& msg) {
-            if (log_callback) log_callback(msg);
-            };
-
+    static std::string build(
+        const ParsedData& data,
+        std::function<void(const std::string&)> log = nullptr)
+    {
         std::ostringstream json;
-        json << std::fixed << std::setprecision(8);
 
-        auto escape_json = [&](const std::string& s) -> std::string {
-            std::string result;
-            for (char c : s) {
-                switch (c) {
-                case '"': result += "\\\""; break;
-                case '\\': result += "\\\\"; break;
-                case '\b': result += "\\b"; break;
-                case '\f': result += "\\f"; break;
-                case '\n': result += "\\n"; break;
-                case '\r': result += "\\r"; break;
-                case '\t': result += "\\t"; break;
-                default: result += c;
-                }
-            }
-            return result;
-            };
+        json << std::fixed
+            << std::setprecision(8);
 
-        auto array_to_json_num = [&](const auto& arr) -> std::string {
-            std::ostringstream oss;
-            oss << "[";
-            for (size_t i = 0; i < arr.size(); ++i) {
-                if (i) oss << ", ";
-                oss << arr[i];
-            }
-            oss << "]";
-            return oss.str();
-            };
-
-        auto format_matrix_as_heatmap = [&](const std::vector<std::vector<double>>& matrix,
-            const std::string& title) -> std::string {
-                std::ostringstream oss;
-                oss << "{\"type\":\"heatmap\",\"name\":\"" << escape_json(title) << "\",\"z\":[";
-                size_t max_rows = std::min(matrix.size(), size_t(1000));
-                for (size_t r = 0; r < max_rows; ++r) {
-                    if (r) oss << ",";
-                    oss << "[";
-                    size_t max_cols = std::min(matrix[r].size(), size_t(1000));
-                    for (size_t c = 0; c < max_cols; ++c) {
-                        if (c) oss << ",";
-                        oss << matrix[r][c];
-                    }
-                    oss << "]";
-                }
-                oss << "]}";
-                return oss.str();
-            };
-
-        auto format_matrix_as_surface = [&](const std::vector<std::vector<double>>& matrix,
-            const std::string& title) -> std::string {
-                std::ostringstream oss;
-                oss << "{\"type\":\"surface\",\"name\":\"" << escape_json(title) << "\",\"z\":[";
-                size_t max_rows = std::min(matrix.size(), size_t(500));
-                for (size_t r = 0; r < max_rows; ++r) {
-                    if (r) oss << ",";
-                    oss << "[";
-                    size_t max_cols = std::min(matrix[r].size(), size_t(500));
-                    for (size_t c = 0; c < max_cols; ++c) {
-                        if (c) oss << ",";
-                        oss << matrix[r][c];
-                    }
-                    oss << "]";
-                }
-                oss << "]}";
-                return oss.str();
-            };
-
-        auto format_matrix_as_contour = [&](const std::vector<std::vector<double>>& matrix,
-            const std::string& title) -> std::string {
-                std::ostringstream oss;
-                oss << "{\"type\":\"contour\",\"name\":\"" << escape_json(title) << "\",\"z\":[";
-                size_t max_rows = std::min(matrix.size(), size_t(500));
-                for (size_t r = 0; r < max_rows; ++r) {
-                    if (r) oss << ",";
-                    oss << "[";
-                    size_t max_cols = std::min(matrix[r].size(), size_t(500));
-                    for (size_t c = 0; c < max_cols; ++c) {
-                        if (c) oss << ",";
-                        oss << matrix[r][c];
-                    }
-                    oss << "]";
-                }
-                oss << "]}";
-                return oss.str();
-            };
-
-        // Begin Plotly structure
         json << "{\n";
-        json << "  \"filename\": \"" << escape_json(data.filename) << "\",\n";
-        json << "  \"type\": " << static_cast<int>(data.type) << ",\n";
-        json << "  \"data_type\": \"" << escape_json(data.data_type) << "\",\n";
-        json << "  \"shape\": {\n";
-        json << "    \"rows\": " << data.shape.rows << ",\n";
-        json << "    \"cols\": " << data.shape.cols << ",\n";
-        json << "    \"is_matrix\": " << (data.shape.is_matrix ? "true" : "false") << ",\n";
-        json << "    \"layout\": \"" << escape_json(data.shape.layout) << "\"\n";
-        json << "  },\n";
-        json << "  \"data\": [\n";
 
-        bool first_trace = true;
+        write_metadata(json, data);
 
-        // ===== MATRIX DATA (Heatmap + Surface + Contour) =====
-        if (data.is_matrix_data() && !data.numeric_data.empty()) {
-            size_t rows = data.numeric_data.size();
-            size_t cols = data.numeric_data[0].size();
+        json << ",\n";
 
-            log("  Generating visualizations for matrix data (" + std::to_string(rows) + "x" + std::to_string(cols) + ")");
+        write_plot(json, data);
 
-            // Heatmap (always included)
-            if (!first_trace) json << ",\n";
-            first_trace = false;
-            json << "    " << format_matrix_as_heatmap(data.numeric_data, data.data_type + "_heatmap");
+        json << ",\n";
 
-            // Surface plot (for smaller matrices or when appropriate)
-            if (rows <= 200 && cols <= 200 && rows > 2 && cols > 2) {
-                json << ",\n";
-                json << "    " << format_matrix_as_surface(data.numeric_data, data.data_type + "_surface");
-            }
+        write_layout(json, data);
 
-            // Contour plot (for medium-sized matrices)
-            if (rows <= 500 && cols <= 500 && rows > 3 && cols > 3) {
-                json << ",\n";
-                json << "    " << format_matrix_as_contour(data.numeric_data, data.data_type + "_contour");
-            }
-        }
-        // ===== NUMERIC DATA (non-matrix: time series, scatter, etc.) =====
-        else if (!data.numeric_data.empty()) {
-            size_t rows = data.numeric_data.size();
-            size_t cols = data.numeric_data[0].size();
-
-            // check consistent row lengths
-            bool consistent = true;
-            for (size_t r = 1; r < rows; ++r) {
-                if (data.numeric_data[r].size() != cols) { consistent = false; break; }
-            }
-
-            if (cols == 2) {
-                // scatter
-                std::vector<double> x(rows), y(rows);
-                for (size_t r = 0; r < rows; ++r) {
-                    x[r] = data.numeric_data[r][0];
-                    y[r] = data.numeric_data[r][1];
-                }
-                if (!first_trace) json << ",\n";
-                first_trace = false;
-                json << "    {\"type\":\"scatter\",\"mode\":\"lines+markers\",\"name\":\""
-                    << escape_json(data.data_type.empty() ? "Series" : data.data_type)
-                    << "\",\"x\":" << array_to_json_num(x)
-                    << ",\"y\":" << array_to_json_num(y) << "}";
-            }
-            else if (cols == 3) {
-                // scatter3d
-                std::vector<double> x(rows), y(rows), z(rows);
-                for (size_t r = 0; r < rows; ++r) {
-                    x[r] = data.numeric_data[r][0];
-                    y[r] = data.numeric_data[r][1];
-                    z[r] = data.numeric_data[r][2];
-                }
-                if (!first_trace) json << ",\n";
-                first_trace = false;
-                json << "    {\"type\":\"scatter3d\",\"mode\":\"lines+markers\",\"name\":\""
-                    << escape_json(data.data_type.empty() ? "3D Series" : data.data_type)
-                    << "\",\"x\":" << array_to_json_num(x)
-                    << ",\"y\":" << array_to_json_num(y)
-                    << ",\"z\":" << array_to_json_num(z) << "}";
-            }
-            else if (cols == 1) {
-                // single column - use index as X
-                std::vector<double> x(rows), y(rows);
-                for (size_t r = 0; r < rows; ++r) {
-                    x[r] = static_cast<double>(r);
-                    y[r] = data.numeric_data[r][0];
-                }
-                if (!first_trace) json << ",\n";
-                first_trace = false;
-                json << "    {\"type\":\"scatter\",\"mode\":\"lines+markers\",\"name\":\""
-                    << escape_json(data.data_type.empty() ? "Series" : data.data_type)
-                    << "\",\"x\":" << array_to_json_num(x)
-                    << ",\"y\":" << array_to_json_num(y) << "}";
-            }
-            else {
-                // multiple Y series, first col is x
-                std::vector<double> x(rows);
-                for (size_t r = 0; r < rows; ++r) x[r] = data.numeric_data[r][0];
-
-                for (size_t c = 1; c < cols; ++c) {
-                    std::vector<double> y(rows);
-                    for (size_t r = 0; r < rows; ++r) {
-                        y[r] = (data.numeric_data[r].size() > c) ? data.numeric_data[r][c] : 0.0;
-                    }
-                    if (!first_trace) json << ",\n";
-                    first_trace = false;
-                    std::string name = data.headers.size() > c ? data.headers[c] : ("Series " + std::to_string(c));
-                    json << "    {\"type\":\"scatter\",\"mode\":\"lines+markers\",\"name\":\""
-                        << escape_json(name) << "\",\"x\":" << array_to_json_num(x)
-                        << ",\"y\":" << array_to_json_num(y) << "}";
-                }
-
-                // Heatmap for matrix-like data (consistent columns)
-                if (consistent && rows > 1 && cols > 1 && rows * cols <= 10000) {
-                    if (!first_trace) json << ",\n";
-                    first_trace = false;
-                    json << "    {\"type\":\"heatmap\",\"name\":\"Heatmap\",\"z\":[";
-                    for (size_t r = 0; r < rows; ++r) {
-                        if (r) json << ",";
-                        json << "[";
-                        for (size_t c = 0; c < cols; ++c) {
-                            if (c) json << ",";
-                            json << data.numeric_data[r][c];
-                        }
-                        json << "]";
-                    }
-                    json << "]}";
-                }
-            }
-        }
-
-        // ===== MESH DATA =====
-        if (data.has_mesh() && !data.mesh.x.empty()) {
-            if (!first_trace) json << ",\n";
-            first_trace = false;
-
-            json << "    {\"type\":\"mesh3d\",\"name\":\"3D Mesh\"";
-            json << ",\"x\":" << array_to_json_num(data.mesh.x);
-            json << ",\"y\":" << array_to_json_num(data.mesh.y);
-            json << ",\"z\":" << array_to_json_num(data.mesh.z);
-
-            if (!data.mesh.i.empty() && !data.mesh.j.empty() && !data.mesh.k.empty()) {
-                json << ",\"i\":" << array_to_json_num(data.mesh.i);
-                json << ",\"j\":" << array_to_json_num(data.mesh.j);
-                json << ",\"k\":" << array_to_json_num(data.mesh.k);
-            }
-
-            if (!data.mesh.intensity.empty()) {
-                json << ",\"intensity\":" << array_to_json_num(data.mesh.intensity);
-                json << ",\"colorscale\":\"Viridis\"";
-            }
-            json << "}";
-        }
-
-        // ===== SECTIONS DATA =====
-        if (data.has_sections()) {
-            for (const auto& sec_pair : data.sections) {
-                for (const auto& comp_pair : sec_pair.second.components) {
-                    if (comp_pair.second.empty()) continue;
-
-                    if (!first_trace) json << ",\n";
-                    first_trace = false;
-
-                    std::string trace_name = sec_pair.first + "_comp_" + std::to_string(comp_pair.first);
-                    size_t comp_rows = comp_pair.second.size();
-                    size_t comp_cols = comp_pair.second[0].size();
-
-                    // Check if this section data is a matrix
-                    bool is_matrix = true;
-                    for (size_t i = 1; i < std::min(comp_rows, size_t(10)); i++) {
-                        if (comp_pair.second[i].size() != comp_cols) {
-                            is_matrix = false;
-                            break;
-                        }
-                    }
-
-                    if (is_matrix && comp_rows > 2 && comp_cols > 2 && comp_rows * comp_cols <= 5000) {
-                        // Render as heatmap
-                        json << "    {\"type\":\"heatmap\",\"name\":\"" << escape_json(trace_name) << "\",\"z\":[";
-                        for (size_t r = 0; r < comp_rows && r < 200; ++r) {
-                            if (r) json << ",";
-                            json << "[";
-                            for (size_t c = 0; c < comp_cols && c < 200; ++c) {
-                                if (c) json << ",";
-                                json << comp_pair.second[r][c];
-                            }
-                            json << "]";
-                        }
-                        json << "]}";
-                    }
-                    else if (comp_cols == 3) {
-                        // 3D scatter
-                        json << "    {\"type\":\"scatter3d\",\"mode\":\"markers\",\"name\":\""
-                            << escape_json(trace_name) << "\",\"x\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][0];
-                        }
-                        json << "],\"y\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][1];
-                        }
-                        json << "],\"z\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][2];
-                        }
-                        json << "]}";
-                    }
-                    else if (comp_cols == 2) {
-                        // 2D scatter
-                        json << "    {\"type\":\"scatter\",\"mode\":\"lines+markers\",\"name\":\""
-                            << escape_json(trace_name) << "\",\"x\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][0];
-                        }
-                        json << "],\"y\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][1];
-                        }
-                        json << "]}";
-                    }
-                    else if (comp_cols == 1) {
-                        // Single column - use index as X
-                        json << "    {\"type\":\"scatter\",\"mode\":\"lines+markers\",\"name\":\""
-                            << escape_json(trace_name) << "\",\"x\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << r;
-                        }
-                        json << "],\"y\":[";
-                        for (size_t r = 0; r < comp_rows; ++r) {
-                            if (r) json << ",";
-                            json << comp_pair.second[r][0];
-                        }
-                        json << "]}";
-                    }
-                }
-            }
-        }
-
-        // Close data array
-        json << "\n  ],\n";
-
-        // ===== STATISTICS (for matrix data) =====
-        if (data.is_matrix_data() && !data.numeric_data.empty()) {
-            json << "  \"statistics\": {\n";
-            json << "    \"min_value\": " << data.metadata.count("min_value") << ",\n";
-            json << "    \"max_value\": " << data.metadata.count("max_value") << ",\n";
-            json << "    \"total_elements\": " << (data.shape.rows * data.shape.cols) << "\n";
-            json << "  },\n";
-        }
-
-        // ===== METADATA =====
-        json << "  \"metadata\": {\n";
-        bool first_meta = true;
-        for (const auto& meta : data.metadata) {
-            if (!first_meta) json << ",\n";
-            first_meta = false;
-            json << "    \"" << escape_json(meta.first) << "\": \"" << escape_json(meta.second) << "\"";
-        }
-        json << "\n  }\n";
-
-        // Close main object
-        json << "}\n";
+        json << "\n}";
 
         return json.str();
     }
 
 private:
-    // Helper method to format matrix as heatmap (exposed for internal use)
-    static std::string format_matrix_as_heatmap(const std::vector<std::vector<double>>& matrix,
-        const std::string& title) {
-        std::ostringstream oss;
-        oss << "{\"type\":\"heatmap\",\"name\":\"" << title << "\",\"z\":[";
-        size_t max_rows = std::min(matrix.size(), size_t(1000));
-        for (size_t r = 0; r < max_rows; ++r) {
-            if (r) oss << ",";
-            oss << "[";
-            size_t max_cols = std::min(matrix[r].size(), size_t(1000));
-            for (size_t c = 0; c < max_cols; ++c) {
-                if (c) oss << ",";
-                oss << matrix[r][c];
-            }
-            oss << "]";
+
+    // =========================================================
+    // METADATA
+    // =========================================================
+
+    static void write_metadata(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        json << "\"metadata\": {\n";
+
+        json << "\"filename\": \""
+            << data.filename
+            << "\",\n";
+
+        json << "\"plot_type\": \""
+            << data.plot_type
+            << "\",\n";
+
+        json << "\"data_type\": \""
+            << data.data_type
+            << "\"";
+
+        for (const auto& meta : data.metadata)
+        {
+            if (meta.first == "plot_type")
+                continue;
+
+            if (meta.first == "data_type")
+                continue;
+
+            json << ",\n";
+
+            json << "\""
+                << meta.first
+                << "\": \""
+                << meta.second
+                << "\"";
         }
-        oss << "]}";
-        return oss.str();
+
+        json << "\n}";
+    }
+
+    // =========================================================
+    // DATA
+    // =========================================================
+
+    static void write_plot(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        json << "\"data\": [\n";
+
+        if (data.plot_type == "surface")
+        {
+            write_surface(json, data);
+        }
+        else if (data.plot_type == "heatmap")
+        {
+            write_heatmap(json, data);
+        }
+        else if (data.plot_type == "scatter")
+        {
+            write_scatter(json, data);
+        }
+        else if (data.plot_type == "mesh3d")
+        {
+            write_mesh(json, data);
+        }
+
+        json << "\n]";
+    }
+
+    // =========================================================
+    // LAYOUT
+    // =========================================================
+
+    static void write_layout(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        json << "\"layout\": {";
+
+        // =====================================================
+        // TITLE
+        // =====================================================
+
+        std::string title;
+
+        auto titleIt =
+            data.metadata.find("title");
+
+        if (titleIt != data.metadata.end())
+        {
+            title = titleIt->second;
+        }
+        else if (data.data_type == "stress")
+        {
+            title = "Von-Mises Stress Distribution";
+        }
+        else if (data.data_type == "temperature")
+        {
+            title = "Temperature Distribution";
+        }
+        else if (data.data_type == "wear")
+        {
+            title = "Wear Distribution";
+        }
+        else if (data.data_type == "pressure")
+        {
+            title = "Pressure Distribution";
+        }
+        else
+        {
+            title = data.filename;
+        }
+
+        json << "\"title\": \"" << title << "\"";
+
+        // =====================================================
+        // AXIS LABELS
+        // =====================================================
+
+        std::string xTitle = "X";
+        std::string yTitle = "Y";
+
+        auto xAxisIt =
+            data.metadata.find("x_axis");
+
+        auto yAxisIt =
+            data.metadata.find("y_axis");
+
+        if (xAxisIt != data.metadata.end())
+        {
+            xTitle = xAxisIt->second;
+        }
+
+        if (yAxisIt != data.metadata.end())
+        {
+            yTitle = yAxisIt->second;
+        }
+
+
+        // =====================================================
+        // Z LABEL
+        // =====================================================
+
+        std::string zTitle = "Value";
+
+        auto units_it =
+            data.metadata.find("units");
+
+        std::string units;
+
+        if (units_it != data.metadata.end())
+        {
+            units = units_it->second;
+        }
+
+        if (data.data_type == "stress")
+        {
+            zTitle = "Stress";
+        }
+        else if (data.data_type == "temperature")
+        {
+            zTitle = "Temperature";
+        }
+        else if (data.data_type == "wear")
+        {
+            zTitle = "Wear Depth";
+        }
+        else if (data.data_type == "pressure")
+        {
+            zTitle = "Pressure";
+        }
+
+        if (!units.empty())
+        {
+            zTitle += " (" + units + ")";
+        }
+
+        // =====================================================
+        // SURFACE / MESH3D
+        // =====================================================
+
+        if (data.plot_type == "surface" ||
+            data.plot_type == "mesh3d")
+        {
+            json << ",";
+
+            json << "\"scene\": {";
+
+            json << "\"xaxis\": {";
+            json << "\"title\": \"" << xTitle << "\"";
+            json << "},";
+
+            json << "\"yaxis\": {";
+            json << "\"title\": \"" << yTitle << "\"";
+            json << "},";
+
+            json << "\"zaxis\": {";
+            json << "\"title\": \"" << zTitle << "\"";
+            json << "}";
+
+            json << "}";
+        }
+
+        // =====================================================
+        // HEATMAP
+        // =====================================================
+
+        else if (data.plot_type == "heatmap")
+        {
+            json << ",";
+
+            json << "\"xaxis\": {";
+            json << "\"title\": \"" << xTitle << "\"";
+            json << "},";
+
+            json << "\"yaxis\": {";
+            json << "\"title\": \"" << yTitle << "\"";
+            json << "}";
+        }
+
+        // =====================================================
+        // SCATTER
+        // =====================================================
+
+        else if (data.plot_type == "scatter")
+        {
+            json << ",";
+
+            json << "\"xaxis\": {";
+            json << "\"title\": \"" << xTitle << "\"";
+            json << "},";
+
+            json << "\"yaxis\": {";
+            json << "\"title\": \"" << yTitle << "\"";
+            json << "}";
+        }
+
+        json << "}";
+    }
+
+    // =========================================================
+    // SURFACE
+    // =========================================================
+
+    static void write_surface(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        if (data.numeric_data.empty())
+        {
+            json << "{}";
+            return;
+        }
+
+        json << "{";
+
+        json << "\"type\":\"surface\",";
+        json << "\"colorscale\":\"Viridis\",";
+        json << "\"showscale\":true,";
+
+        json << "\"z\":[";
+
+        for (size_t r = 0;
+            r < data.numeric_data.size();
+            r++)
+        {
+            if (r) json << ",";
+
+            json << "[";
+
+            for (size_t c = 0;
+                c < data.numeric_data[r].size();
+                c++)
+            {
+                if (c) json << ",";
+
+                json << data.numeric_data[r][c];
+            }
+
+            json << "]";
+        }
+
+        json << "]";
+
+        json << "}";
+    }
+
+    // =========================================================
+    // HEATMAP
+    // =========================================================
+
+    static void write_heatmap(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        if (data.numeric_data.empty())
+        {
+            json << "{}";
+            return;
+        }
+
+        json << "{";
+
+        json << "\"type\":\"heatmap\",";
+        json << "\"colorscale\":\"Viridis\",";
+        json << "\"showscale\":true,";
+
+        json << "\"z\":[";
+
+        for (size_t r = 0;
+            r < data.numeric_data.size();
+            r++)
+        {
+            if (r) json << ",";
+
+            json << "[";
+
+            for (size_t c = 0;
+                c < data.numeric_data[r].size();
+                c++)
+            {
+                if (c) json << ",";
+
+                json << data.numeric_data[r][c];
+            }
+
+            json << "]";
+        }
+
+        json << "]";
+
+        json << "}";
+    }
+
+    // =========================================================
+    // SCATTER
+    // =========================================================
+
+    static void write_scatter(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        json << "{";
+
+        json << "\"type\":\"scatter\",";
+        json << "\"mode\":\"lines\",";
+
+        // ===== X =====
+
+        json << "\"x\":[";
+
+        bool first = true;
+
+        for (size_t i = 0;
+            i < data.numeric_data.size();
+            i++)
+        {
+            if (data.numeric_data[i].size() < 2)
+            {
+                continue;
+            }
+
+            if (!first) json << ",";
+
+            json << data.numeric_data[i][0];
+
+            first = false;
+        }
+
+        json << "],";
+
+        // ===== Y =====
+
+        json << "\"y\":[";
+
+        first = true;
+
+        for (size_t i = 0;
+            i < data.numeric_data.size();
+            i++)
+        {
+            if (data.numeric_data[i].size() < 2)
+            {
+                continue;
+            }
+
+            if (!first) json << ",";
+
+            json << data.numeric_data[i][1];
+
+            first = false;
+        }
+
+        json << "]";
+
+        json << "}";
+    }
+
+    // =========================================================
+    // MESH3D
+    // =========================================================
+
+    static void write_mesh(
+        std::ostringstream& json,
+        const ParsedData& data)
+    {
+        json << "{";
+
+        json << "\"type\":\"mesh3d\",";
+        json << "\"colorscale\":\"Viridis\",";
+        json << "\"showscale\":true,";
+
+        // ===== X =====
+
+        json << "\"x\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.x.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.x[i];
+        }
+
+        json << "],";
+
+        // ===== Y =====
+
+        json << "\"y\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.y.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.y[i];
+        }
+
+        json << "],";
+
+        // ===== Z =====
+
+        json << "\"z\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.z.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.z[i];
+        }
+
+        json << "],";
+
+        // ===== I =====
+
+        json << "\"i\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.i.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.i[i];
+        }
+
+        json << "],";
+
+        // ===== J =====
+
+        json << "\"j\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.j.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.j[i];
+        }
+
+        json << "],";
+
+        // ===== K =====
+
+        json << "\"k\":[";
+
+        for (size_t i = 0;
+            i < data.mesh.k.size();
+            i++)
+        {
+            if (i) json << ",";
+
+            json << data.mesh.k[i];
+        }
+
+        json << "]";
+
+        // ===== INTENSITY =====
+
+        if (!data.mesh.intensity.empty())
+        {
+            json << ",\"intensity\":[";
+
+            for (size_t i = 0;
+                i < data.mesh.intensity.size();
+                i++)
+            {
+                if (i) json << ",";
+
+                json << data.mesh.intensity[i];
+            }
+
+            json << "]";
+        }
+
+        json << "}";
     }
 };
 
