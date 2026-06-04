@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -125,27 +125,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="builders\json_builder.cpp" />
+    <ClCompile Include="factory\parser_factory.cpp" />
     <ClCompile Include="JsonConverter.cpp" />
+    <ClCompile Include="parsers\FaceClearanceConformParser.cpp" />
+    <ClCompile Include="parsers\parser_face_wear.cpp" />
+    <ClCompile Include="parsers\PositionConformParser.cpp" />
+    <ClCompile Include="parsers\pressure_conform_parser.cpp" />
+    <ClCompile Include="parsers\ring_forces_parser.cpp" />
+    <ClCompile Include="parsers\StrainEnergyConformParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="file_detector.ch" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="builders\json_builder.h" />
-    <ClInclude Include="classifiers\classification.h" />
-    <ClInclude Include="classifiers\ClassificationResult.h" />
-    <ClInclude Include="classifiers\rule_engine.h" />
-    <ClInclude Include="config\config.h" />
-    <ClInclude Include="detectors\file_detector.h" />
-    <ClInclude Include="detectors\inspection_result.h" />
+    <ClInclude Include="config\file_type.h" />
+    <ClInclude Include="factory\parser_factory.h" />
+    <ClInclude Include="models\plot_data.h" />
     <ClInclude Include="parsers\base_parser.h" />
-    <ClInclude Include="parsers\matrix_parser_base.h" />
-    <ClInclude Include="parsers\parser_heatmap.h" />
-    <ClInclude Include="parsers\parser_2d.h" />
-    <ClInclude Include="parsers\parser_3d.h" />
-    <ClInclude Include="parsers\parser_generic.h" />
-    <ClInclude Include="parsers\parser_gmsh.h" />
-    <ClInclude Include="parsers\parser_surface.h" />
+    <ClInclude Include="parsers\FaceClearanceConformParser.h" />
+    <ClInclude Include="parsers\parser_face_wear.h" />
+    <ClInclude Include="parsers\PositionConformParser.h" />
+    <ClInclude Include="parsers\pressure_conform_parser.h" />
+    <ClInclude Include="parsers\ring_forces_parser.h" />
+    <ClInclude Include="parsers\StrainEnergyConformParser.h" />
     <ClInclude Include="registry\parser_registry.h" />
     <ClInclude Include="utils\file_utils.h" />
   </ItemGroup>
