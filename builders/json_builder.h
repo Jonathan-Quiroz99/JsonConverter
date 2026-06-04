@@ -22,10 +22,6 @@ public:
 
         json << "{\n";
 
-        write_metadata(json, data);
-
-        json << ",\n";
-
         write_plot(json, data);
 
         json << ",\n";
@@ -38,48 +34,7 @@ public:
     }
 
 private:
-
-    // =========================================================
-    // METADATA
-    // =========================================================
-
-    static void write_metadata(
-        std::ostringstream& json,
-        const ParsedData& data)
-    {
-        json << "\"metadata\": {\n";
-
-        json << "\"filename\": \""
-            << data.filename
-            << "\",\n";
-
-        json << "\"plot_type\": \""
-            << data.plot_type
-            << "\",\n";
-
-        json << "\"data_type\": \""
-            << data.data_type
-            << "\"";
-
-        for (const auto& meta : data.metadata)
-        {
-            if (meta.first == "plot_type")
-                continue;
-
-            if (meta.first == "data_type")
-                continue;
-
-            json << ",\n";
-
-            json << "\""
-                << meta.first
-                << "\": \""
-                << meta.second
-                << "\"";
-        }
-
-        json << "\n}";
-    }
+        
 
     // =========================================================
     // DATA
@@ -155,7 +110,12 @@ private:
             title = data.filename;
         }
 
-        json << "\"title\": \"" << title << "\"";
+        json << "\"title\": {";
+        json << "\"text\": \"" << title << "\"";
+        json << "}";
+
+        json << ",";
+        json << "\"showlegend\": true";
 
         // =====================================================
         // AXIS LABELS
@@ -231,15 +191,19 @@ private:
             json << "\"scene\": {";
 
             json << "\"xaxis\": {";
-            json << "\"title\": \"" << xTitle << "\"";
+            json << "\"title\": {";
+            json << "\"text\": \"" << xTitle << "\"";
+            json << "}";
             json << "},";
 
             json << "\"yaxis\": {";
-            json << "\"title\": \"" << yTitle << "\"";
-            json << "},";
+            json << "\"title\": {";
+            json << "\"text\": \"" << yTitle << "\"";
+            json << "}";
+            json << "}";
 
             json << "\"zaxis\": {";
-            json << "\"title\": \"" << zTitle << "\"";
+            json << "\"text\": \"" << zTitle << "\"";
             json << "}";
 
             json << "}";
@@ -254,11 +218,15 @@ private:
             json << ",";
 
             json << "\"xaxis\": {";
-            json << "\"title\": \"" << xTitle << "\"";
+            json << "\"title\": {";
+            json << "\"text\": \"" << xTitle << "\"";
+            json << "}";
             json << "},";
 
             json << "\"yaxis\": {";
-            json << "\"title\": \"" << yTitle << "\"";
+            json << "\"title\": {";
+            json << "\"text\": \"" << yTitle << "\"";
+            json << "}";
             json << "}";
         }
 
@@ -271,11 +239,15 @@ private:
             json << ",";
 
             json << "\"xaxis\": {";
-            json << "\"title\": \"" << xTitle << "\"";
+            json << "\"title\": {";
+            json << "\"text\": \"" << xTitle << "\"";
+            json << "}";
             json << "},";
 
             json << "\"yaxis\": {";
-            json << "\"title\": \"" << yTitle << "\"";
+            json << "\"title\": {";
+            json << "\"text\": \"" << yTitle << "\"";
+            json << "}";
             json << "}";
         }
 
@@ -387,50 +359,51 @@ private:
         json << "{";
 
         json << "\"type\":\"scatter\",";
-        json << "\"mode\":\"lines\",";
+        json << "\"mode\":\"lines+markers\",";
 
-        // ===== X =====
+        auto nameIt = data.metadata.find("series_name");
 
+        if (nameIt != data.metadata.end())
+        {
+            json << "\"name\":\""
+                << nameIt->second
+                << "\",";
+        }
+
+        // X
         json << "\"x\":[";
 
         bool first = true;
 
-        for (size_t i = 0;
-            i < data.numeric_data.size();
-            i++)
+        for (const auto& row : data.numeric_data)
         {
-            if (data.numeric_data[i].size() < 2)
-            {
+            if (row.size() < 2)
                 continue;
-            }
 
-            if (!first) json << ",";
+            if (!first)
+                json << ",";
 
-            json << data.numeric_data[i][0];
+            json << row[0];
 
             first = false;
         }
 
         json << "],";
 
-        // ===== Y =====
-
+        // Y
         json << "\"y\":[";
 
         first = true;
 
-        for (size_t i = 0;
-            i < data.numeric_data.size();
-            i++)
+        for (const auto& row : data.numeric_data)
         {
-            if (data.numeric_data[i].size() < 2)
-            {
+            if (row.size() < 2)
                 continue;
-            }
 
-            if (!first) json << ",";
+            if (!first)
+                json << ",";
 
-            json << data.numeric_data[i][1];
+            json << row[1];
 
             first = false;
         }
