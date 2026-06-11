@@ -6,6 +6,7 @@
 #include "../parsers/PositionConformParser.h"
 #include "../parsers/StrainEnergyConformParser.h"
 #include "../parsers/FaceClearanceConformParser.h"
+#include "../parsers/SurfaceAnimParser.h"
 
 std::unique_ptr<BaseParser>
 ParserFactory::create(
@@ -35,23 +36,26 @@ ParserFactory::create(
             StrainEnergyConformParser>(filepath);
     }
 
-    if (
-        filepath.find("RING_FORCES")
-        != std::string::npos)
+    if (filepath.find("RING_FORCES") != std::string::npos)
     {
         return std::make_unique<
             RingForcesParser>(
                 filepath);
     }
 
-    if (
-        filepath.find("_WEAR")
-        != std::string::npos)
+    if (filepath.find("_WEAR") != std::string::npos)
     {
         return std::make_unique<
             FaceWearParser>(
                 filepath);
     }
+
+    if (filepath.find("FACEPRES_CYCLE"))
+        {
+        return std::make_unique<
+            SurfaceAnimParser>(
+                filepath);
+	}
 
     return nullptr;
 }

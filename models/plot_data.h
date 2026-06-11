@@ -20,6 +20,8 @@ struct Series
     std::vector<double> y;
 
     std::vector<double> z;
+
+    std::vector<std::vector<double>> matrix;
 };
 
 struct PlotData
@@ -40,4 +42,7 @@ struct PlotData
 
     // Surface plots
     std::vector<std::vector<double>> matrix;
+
+	// Animated surface plots (multiple frames)
+    std::vector<std::vector<std::vector<double>>> frames;
 };
