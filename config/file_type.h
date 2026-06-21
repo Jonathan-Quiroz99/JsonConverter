@@ -14,5 +14,7 @@ enum class FileType
 
     StressCycle,
 
-    StrainEnergy
+    StrainEnergy,
+
+    Scatter3d
 };

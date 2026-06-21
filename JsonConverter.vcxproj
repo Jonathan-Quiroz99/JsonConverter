@@ -133,6 +133,7 @@
     <ClCompile Include="parsers\PositionConformParser.cpp" />
     <ClCompile Include="parsers\pressure_conform_parser.cpp" />
     <ClCompile Include="parsers\ring_forces_parser.cpp" />
+    <ClCompile Include="parsers\Scatter3dAnimParser.cpp" />
     <ClCompile Include="parsers\StrainEnergyConformParser.cpp" />
     <ClCompile Include="parsers\SurfaceAnimParser.cpp" />
   </ItemGroup>
@@ -150,6 +151,7 @@
     <ClInclude Include="parsers\PositionConformParser.h" />
     <ClInclude Include="parsers\pressure_conform_parser.h" />
     <ClInclude Include="parsers\ring_forces_parser.h" />
+    <ClInclude Include="parsers\Scatter3dAnimParser.h" />
     <ClInclude Include="parsers\StrainEnergyConformParser.h" />
     <ClInclude Include="parsers\SurfaceAnimParser.h" />
     <ClInclude Include="registry\parser_registry.h" />

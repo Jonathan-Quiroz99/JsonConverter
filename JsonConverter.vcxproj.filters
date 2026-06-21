@@ -48,6 +48,9 @@
     <ClCompile Include="parsers\SurfaceAnimParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="parsers\Scatter3dAnimParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="file_detector.ch">
@@ -95,6 +98,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parsers\SurfaceAnimParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parsers\Scatter3dAnimParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

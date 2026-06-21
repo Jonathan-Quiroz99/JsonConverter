@@ -25,6 +25,17 @@ std::string JsonBuilder::build(
     }
 }
 
+std::string JsonBuilder::buildScatter3D(
+    const PlotData& data)
+{
+    if (!data.frames.empty())
+    {
+        return buildAnimatedScatter3D(data);
+    }
+
+    return buildStaticScatter3D(data);
+}
+
 std::string JsonBuilder::buildSurface(
     const PlotData& data)
 {
@@ -333,7 +344,7 @@ std::string JsonBuilder::buildHeatmap(
     return json.str();
 }
 
-std::string JsonBuilder::buildScatter3D(
+std::string JsonBuilder::buildStaticScatter3D(
     const PlotData& data)
 {
     std::ostringstream json;
@@ -694,4 +705,235 @@ void JsonBuilder::writeMatrix(
     }
 
     json << "]";
+}
+
+std::string JsonBuilder::buildAnimatedScatter3D(
+    const PlotData& data)
+{
+    if (data.frames.empty())
+    {
+        return "{}";
+    }
+
+    std::ostringstream json;
+
+    json << std::fixed
+        << std::setprecision(6);
+
+    json << "{";
+
+    /*
+    ============================================================
+    INITIAL TRACE
+    ============================================================
+    */
+
+    json << "\"data\":[{";
+
+    json << "\"type\":\"scatter3d\",";
+    json << "\"mode\":\"lines+markers\",";
+
+    /*
+    FRAME 0
+    */
+
+    const auto& firstFrame =
+        data.frames[0];
+
+    json << "\"x\":[";
+    for (size_t i = 0; i < firstFrame.size(); i++)
+    {
+        if (i > 0) json << ",";
+        json << firstFrame[i][0];
+    }
+    json << "],";
+
+    json << "\"y\":[";
+    for (size_t i = 0; i < firstFrame.size(); i++)
+    {
+        if (i > 0) json << ",";
+        json << firstFrame[i][1];
+    }
+    json << "],";
+
+    json << "\"z\":[";
+    for (size_t i = 0; i < firstFrame.size(); i++)
+    {
+        if (i > 0) json << ",";
+        json << firstFrame[i][2];
+    }
+    json << "]";
+
+    json << "}],";
+
+    /*
+    ============================================================
+    LAYOUT
+    ============================================================
+    */
+
+    json << "\"layout\":{";
+
+    json << "\"title\":\""
+        << data.title
+        << "\",";
+
+    json << "\"scene\":{";
+
+    json << "\"xaxis\":{\"title\":\""
+        << data.xLabel
+        << "\"},";
+
+    json << "\"yaxis\":{\"title\":\""
+        << data.yLabel
+        << "\"},";
+
+    json << "\"zaxis\":{\"title\":\""
+        << data.zLabel
+        << "\"}";
+
+    json << "},";
+
+    /*
+    PLAY / STOP
+    */
+
+    json << "\"updatemenus\":[{";
+    json << "\"type\":\"buttons\",";
+    json << "\"showactive\":false,";
+
+    json << "\"buttons\":[";
+
+    json << "{";
+    json << "\"label\":\"Play\",";
+    json << "\"method\":\"animate\",";
+    json << "\"args\":[null,{";
+    json << "\"mode\":\"immediate\",";
+    json << "\"fromcurrent\":true,";
+    json << "\"transition\":{\"duration\":0},";
+    json << "\"frame\":{\"duration\":50,\"redraw\":true}";
+    json << "}]";
+    json << "}";
+
+    json << ",{";
+    json << "\"label\":\"Stop\",";
+    json << "\"method\":\"animate\",";
+    json << "\"args\":[[null],{";
+    json << "\"mode\":\"immediate\",";
+    json << "\"transition\":{\"duration\":0},";
+    json << "\"frame\":{\"duration\":0,\"redraw\":false}";
+    json << "}]";
+    json << "}";
+
+    json << "]";
+    json << "}],";
+
+    /*
+    ============================================================
+    SLIDER
+    ============================================================
+    */
+
+    json << "\"sliders\":[{";
+    json << "\"active\":0,";
+    json << "\"currentvalue\":{\"prefix\":\"Frame: \"},";
+    json << "\"steps\":[";
+
+    for (size_t i = 0; i < data.frames.size(); i++)
+    {
+        if (i > 0)
+        {
+            json << ",";
+        }
+
+        json << "{";
+        json << "\"label\":\"" << i << "\",";
+        json << "\"method\":\"animate\",";
+        json << "\"args\":[[\"f" << i << "\"],{";
+        json << "\"mode\":\"immediate\",";
+        json << "\"transition\":{\"duration\":0},";
+        json << "\"frame\":{\"duration\":0,\"redraw\":true}";
+        json << "}]";
+        json << "}";
+    }
+
+    json << "]";
+    json << "}]";
+
+    json << "},";
+
+    /*
+    ============================================================
+    FRAMES
+    ============================================================
+    */
+
+    json << "\"frames\":[";
+
+    for (size_t frameIndex = 0;
+        frameIndex < data.frames.size();
+        frameIndex++)
+    {
+        if (frameIndex > 0)
+        {
+            json << ",";
+        }
+
+        const auto& frame =
+            data.frames[frameIndex];
+
+        json << "{";
+
+        json << "\"name\":\"f"
+            << frameIndex
+            << "\",";
+
+        json << "\"traces\":[0],";
+
+        json << "\"data\":[{";
+
+        json << "\"x\":[";
+        for (size_t i = 0; i < frame.size(); i++)
+        {
+            if (i > 0) json << ",";
+            json << frame[i][0];
+        }
+        json << "],";
+
+        json << "\"y\":[";
+        for (size_t i = 0; i < frame.size(); i++)
+        {
+            if (i > 0) json << ",";
+            json << frame[i][1];
+        }
+        json << "],";
+
+        json << "\"z\":[";
+        for (size_t i = 0; i < frame.size(); i++)
+        {
+            if (i > 0) json << ",";
+            json << frame[i][2];
+        }
+        json << "]";
+
+        json << "}]";
+
+        json << "}";
+    }
+
+    json << "],";
+
+    /*
+    ============================================================
+    CONFIG
+    ============================================================
+    */
+
+    json << "\"config\":{";
+    json << "\"responsive\":true";
+    json << "}";
+
+    json << "}";
+
+    return json.str();
 }

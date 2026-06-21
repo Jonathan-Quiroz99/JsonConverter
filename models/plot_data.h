@@ -43,6 +43,6 @@ struct PlotData
     // Surface plots
     std::vector<std::vector<double>> matrix;
 
-	// Animated surface plots (multiple frames)
+	// Animated plots (multiple frames)
     std::vector<std::vector<std::vector<double>>> frames;
 };

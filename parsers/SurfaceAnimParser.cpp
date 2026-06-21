@@ -15,22 +15,36 @@ PlotData SurfaceAnimParser::parse()
 {
     PlotData data;
 
-    data.plotType = PlotType::Surface;
+	data.plotType = PlotType::Surface;
 
-    data.title =
-        "Ring Face Pressure Cycle";
+    data.xLabel = "Circumferential Node";
+    data.yLabel = "Axial Node";
 
-    data.xLabel =
-        "Circumferential Node";
+    if (filepath.find("FACEPRES") != std::string::npos)
+    {
+        data.title = "Ring Face Pressure Cycle";
+        data.zLabel = "Pressure";
+        data.units = "PSI";
+    }
+    else if (filepath.find("FACE_STRESS") != std::string::npos)
+    {
+        data.title = "Face Von-Mises Stress Cycle";
+        data.zLabel = "Von-Mises Stress";
+        data.units = "PSI";
+    }
+    else if (filepath.find("TOP_STRESS") != std::string::npos)
+    {
+        data.title = "Top Von-Mises Stress Cycle";
+        data.zLabel = "Von-Mises Stress";
+        data.units = "PSI";
+    }
+    else if (filepath.find("TRA_CYCLE") != std::string::npos)
+    {
+        data.title = "Ring Top Side Pressure Cycle";
+        data.zLabel = "Pressure";
+        data.units = "PSI";
+    }
 
-    data.yLabel =
-        "Axial Node";
-
-    data.zLabel =
-        "Pressure";
-
-    data.units =
-        "PSI";
 
     std::ifstream file(filepath);
 

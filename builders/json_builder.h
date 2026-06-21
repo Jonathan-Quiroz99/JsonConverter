@@ -28,10 +28,16 @@ private:
 	static std::string buildScatter3D(
 		const PlotData& data);
 
+    static std::string buildStaticScatter3D(
+        const PlotData& data);
+
     static void writeMatrix(
         std::ostringstream& json,
         const std::vector<std::vector<double>>& matrix);
 
 	static std::string buildAnimatedSurface(
+		const PlotData& data);
+
+	static std::string buildAnimatedScatter3D(
 		const PlotData& data);
 };

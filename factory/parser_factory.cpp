@@ -7,6 +7,7 @@
 #include "../parsers/StrainEnergyConformParser.h"
 #include "../parsers/FaceClearanceConformParser.h"
 #include "../parsers/SurfaceAnimParser.h"
+#include "../parsers/Scatter3dAnimParser.h"
 
 std::unique_ptr<BaseParser>
 ParserFactory::create(
@@ -50,7 +51,14 @@ ParserFactory::create(
                 filepath);
     }
 
-    if (filepath.find("FACEPRES_CYCLE"))
+    if (filepath.find("POS_CYCLE") != std::string::npos)
+    {
+        return std::make_unique<
+            Scatter3dAnimParser>(
+                filepath);
+	}
+
+    if (filepath.find("_CYCLE" ) != std::string::npos)
         {
         return std::make_unique<
             SurfaceAnimParser>(
