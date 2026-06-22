@@ -14,8 +14,35 @@ Scatter3dAnimParser::Scatter3dAnimParser(
 PlotData Scatter3dAnimParser::parse()
 {
     PlotData data;
+    std::ifstream file(filepath);
 
+    if (!file.is_open())        //Not open, so return
+    {
+        return data;
+    }
+
+ 
     data.plotType = PlotType::Scatter3D;
+
+    constexpr int HEADER_LINES = 5;
+
+    /*
+    ============================================================
+    POS_CYCLE
+
+    Each frame contains:
+
+        X
+        Y
+        Z
+        TWIST
+
+    for the number of nodes in the data.
+
+    NODES = number of actual nodes in the file from the data lines
+
+    ============================================================
+    */
 
     data.title =
         "Ring Position Cycle";
@@ -32,34 +59,7 @@ PlotData Scatter3dAnimParser::parse()
     data.units =
         "Inches";
 
-    std::ifstream file(filepath);
-
-    if (!file.is_open())
-    {
-        return data;
-    }
-
     std::string line;
-
-    constexpr int HEADER_LINES = 5;
-
-    /*
-    ============================================================
-    POS_CYCLE
-
-    NODES = number of actual nodes in the file from the data lines
-
-    Each frame contains:
-
-        X
-        Y
-        Z
-        TWIST
-
-    for the number of nodes in the data.
-
-    ============================================================
-    */
 
     int ROWS_PER_FRAME;
 
@@ -69,7 +69,7 @@ PlotData Scatter3dAnimParser::parse()
     {
         std::getline(file, line);
         if (i == 2) {
-            //read the data for the axis labels
+            //Probably better to read the data for the axis labels
         }
 
         if (i == 4) {
