@@ -8,57 +8,67 @@
 #include "../parsers/FaceClearanceConformParser.h"
 #include "../parsers/SurfaceAnimParser.h"
 #include "../parsers/Scatter3dAnimParser.h"
+#include <cctype> // Required for std::toupper
+
 
 std::unique_ptr<BaseParser>
 ParserFactory::create(
     const std::string& filepath)
 {
-    if (filepath.find("PRES_CONFORM") != std::string::npos)
+
+    // Work on an uppercase copy for case-insensitive matching so we don't
+    // attempt to modify the const input parameter.
+    std::string upper_filepath = filepath;
+    for (char& c : upper_filepath) {
+        c = std::toupper(static_cast<unsigned char>(c));
+    }
+
+    if (upper_filepath.find("PRES_CONFORM") != std::string::npos)
     {
         return std::make_unique<
             PressureConformParser>(filepath);
     }
 
-    if (filepath.find("FACE_CLEARANCE_CONFORM") != std::string::npos)
+    if (upper_filepath.find("FACE_CLEARANCE_CONFORM") != std::string::npos)
     {
         return std::make_unique<
             FaceClearanceConformParser>(filepath);
     }
 
-    if (filepath.find("POS_CONFORM") != std::string::npos)
+    if (upper_filepath.find("POS_CONFORM") != std::string::npos)
     {
         return std::make_unique<
             PositionConformParser>(filepath);
     }
 
-    if (filepath.find("STRAIN_ENERGY_CONFORM") != std::string::npos)
+    if (upper_filepath.find("STRAIN_ENERGY_CONFORM") != std::string::npos)
     {
         return std::make_unique<
             StrainEnergyConformParser>(filepath);
     }
 
-    if (filepath.find("RING_FORCES") != std::string::npos)
+    if (upper_filepath.find("RING_FORCES") != std::string::npos)
     {
         return std::make_unique<
             RingForcesParser>(
                 filepath);
     }
 
-    if (filepath.find("_WEAR") != std::string::npos)
+    if (upper_filepath.find("_WEAR") != std::string::npos)
     {
         return std::make_unique<
             FaceWearParser>(
                 filepath);
     }
 
-    if (filepath.find("POS_CYCLE") != std::string::npos)
+    if (upper_filepath.find("POS_CYCLE") != std::string::npos)
     {
         return std::make_unique<
             Scatter3dAnimParser>(
                 filepath);
 	}
 
-    if (filepath.find("_CYCLE" ) != std::string::npos)
+    if (upper_filepath.find("_CYCLE" ) != std::string::npos)
         {
         return std::make_unique<
             SurfaceAnimParser>(

@@ -47,7 +47,7 @@ PlotData Scatter3dAnimParser::parse()
     ============================================================
     POS_CYCLE
 
-    NODES = 9
+    NODES = number of actual nodes in the file from the data lines
 
     Each frame contains:
 
@@ -56,17 +56,39 @@ PlotData Scatter3dAnimParser::parse()
         Z
         TWIST
 
-    for 9 nodes.
+    for the number of nodes in the data.
 
     ============================================================
     */
 
-    constexpr int ROWS_PER_FRAME = 9;
+    int ROWS_PER_FRAME;
+
     constexpr int COLUMNS = 4;
 
     for (int i = 0; i < HEADER_LINES; i++)
     {
         std::getline(file, line);
+        if (i == 2) {
+            //read the data for the axis labels
+        }
+
+        if (i == 4) {
+            //get the number of nodes off the data line
+            try {
+                // Parse the integer from the beginning of the string
+                int number = std::stoi(line);
+                std::cout << "Successfully parsed: " << number << std::endl;
+                ROWS_PER_FRAME = number; //
+            }
+            catch (const std::invalid_argument& e) {
+                std::cout << "No valid conversion could be performed." << std::endl;
+                return data;
+            }
+            catch (const std::out_of_range& e) {
+                std::cout << "The converted value falls out of the int range." << std::endl;
+                return data;
+            }
+        }
     }
 
     while (true)
