@@ -14,47 +14,47 @@ StrainEnergyConformParser::StrainEnergyConformParser(
 PlotData StrainEnergyConformParser::parse()
 {
     PlotData data;
-
-    data.plotType =
-        PlotType::Scatter;
-
-    data.title =
-        "Ring Strain Energy During Conformance";
-
-    data.xLabel =
-        "Output Step";
-
-    data.yLabel =
-        "Strain Energy";
-
-    data.units =
-        "in-lb";
-
-    Series raw;
-    raw.name =
-        "Strain Energy";
-
-    Series filtered;
-    filtered.name =
-        "Filtered Strain Energy";
-
     std::ifstream file(filepath);
-
-    if (!file.is_open())
-    {
-        throw std::runtime_error(
-            "Cannot open file");
-    }
-
     std::string line;
+ 
+    constexpr int HEADER_LINES = 5;
 
-    //
-    // Skip header
-    //
+    //This has two different "columns" of data to be graphed together
+    Series raw;
+    raw.name =        "RAW";
+    Series filtered;
+    filtered.name =   "Filtered";
 
-    for (int i = 0; i < 5; i++)
+    data.plotType =   PlotType::Scatter;
+    data.title =      "Ring Strain Energy During Conformance";
+    data.xLabel =     "Output Step";
+    data.yLabel =     "Strain Energy";
+    data.units =      "in-lb";
+
+
+    if (!file.is_open())  return data;        //Not open, so return
+
+    for (int i = 0; i < HEADER_LINES; i++)
     {
         std::getline(file, line);
+        if (i == 0) {
+            std::string old_word = "THIS FILE CONTAINS THE";
+            std::string new_word = "";
+
+            // Find the starting position of the target word
+            size_t pos = line.find(old_word);
+
+            // Check if the word was actually found
+            if (pos != std::string::npos) {
+                // Parameters: (starting position, character count to erase, replacement string)
+                line.replace(pos, old_word.length(), new_word);
+            }
+
+            //Set title
+            data.title = line + " CONFORMANCE"; //missing word in title inside file!!!
+            data.subtitle = "";
+
+        }
     }
 
     int step = 0;

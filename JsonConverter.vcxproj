@@ -130,7 +130,7 @@
     <ClCompile Include="JsonConverter.cpp" />
     <ClCompile Include="parsers\FaceClearanceConformParser.cpp" />
     <ClCompile Include="parsers\parser_face_wear.cpp" />
-    <ClCompile Include="parsers\PositionConformParser.cpp" />
+    <ClCompile Include="parsers\RingPositionCycleParser.cpp" />
     <ClCompile Include="parsers\pressure_conform_parser.cpp" />
     <ClCompile Include="parsers\ring_forces_parser.cpp" />
     <ClCompile Include="parsers\Scatter3dAnimParser.cpp" />
@@ -148,7 +148,7 @@
     <ClInclude Include="parsers\base_parser.h" />
     <ClInclude Include="parsers\FaceClearanceConformParser.h" />
     <ClInclude Include="parsers\parser_face_wear.h" />
-    <ClInclude Include="parsers\PositionConformParser.h" />
+    <ClInclude Include="parsers\RingPositionCycleParser.h" />
     <ClInclude Include="parsers\pressure_conform_parser.h" />
     <ClInclude Include="parsers\ring_forces_parser.h" />
     <ClInclude Include="parsers\Scatter3dAnimParser.h" />

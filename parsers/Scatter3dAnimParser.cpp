@@ -13,58 +13,33 @@ Scatter3dAnimParser::Scatter3dAnimParser(
 
 PlotData Scatter3dAnimParser::parse()
 {
+/*
+============================================================
+POS_CYCLE and POS_CONFORM
+    Each frame contains a series of nodes, located at a specific X,Y,Z location and also contail the data for the twist at that node
+            X  Y  Z  TWIST
+    for the number of nodes in the data.
+    NODES = number of actual nodes in the file from the header lines
+
+============================================================
+*/
     PlotData data;
     std::ifstream file(filepath);
-
-    if (!file.is_open())        //Not open, so return
-    {
-        return data;
-    }
-
- 
-    data.plotType = PlotType::Scatter3D;
-
-    constexpr int HEADER_LINES = 5;
-
-    /*
-    ============================================================
-    POS_CYCLE
-
-    Each frame contains:
-
-        X
-        Y
-        Z
-        TWIST
-
-    for the number of nodes in the data.
-
-    NODES = number of actual nodes in the file from the data lines
-
-    ============================================================
-    */
-
-    data.title =
-        "Ring Position Cycle";
-
-    data.xLabel =
-        "X Position";
-
-    data.yLabel =
-        "Y Position";
-
-    data.zLabel =
-        "Z Position";
-
-    data.units =
-        "Inches";
-
     std::string line;
 
-    int ROWS_PER_FRAME;
-
+    constexpr int HEADER_LINES = 5;
     constexpr int COLUMNS = 4;
+    int ROWS_PER_FRAME;             //read the nodes from the header
 
+
+    if (!file.is_open())  return data;        //Not open, so return
+
+    data.plotType = PlotType::Scatter3D;
+    data.title =  "Ring Position Cycle";
+    data.xLabel = "X Position";
+    data.yLabel = "Y Position";
+    data.zLabel = "Z Position";
+    data.units =  "Inches";
     for (int i = 0; i < HEADER_LINES; i++)
     {
         std::getline(file, line);
@@ -101,10 +76,7 @@ PlotData Scatter3dAnimParser::parse()
             row < ROWS_PER_FRAME;
             row++)
         {
-            if (!std::getline(file, line))
-            {
-                break;
-            }
+            if (!std::getline(file, line)) break;
 
             if (line.empty())
             {
@@ -114,27 +86,18 @@ PlotData Scatter3dAnimParser::parse()
                     << " row "
                     << row
                     << std::endl;
-
                 continue;
             }
 
             frameRead = true;
 
-            for (char& c : line)
+            for (char& c : line)    //strip out comma's in input, and change floading point to use the "E" notation
             {
-                if (c == ',')
-                {
-                    c = ' ';
-                }
-
-                if (c == 'D')
-                {
-                    c = 'E';
-                }
+                if (c == ',') c = ' ';
+                if (c == 'D') c = 'E';
             }
 
             std::stringstream ss(line);
-
             std::vector<double> values;
 
             double value;
@@ -159,7 +122,6 @@ PlotData Scatter3dAnimParser::parse()
                     << "LINE: "
                     << line
                     << std::endl;
-
                 continue;
             }
 
@@ -209,7 +171,7 @@ PlotData Scatter3dAnimParser::parse()
             minZ = std::min(minZ, node[2]);
             maxZ = std::max(maxZ, node[2]);
         }
-
+//Trap suspicious node values???Maybe not necessary???DSB
         if (std::abs(maxX) > 100.0 ||
             std::abs(minX) > 100.0 ||
             std::abs(maxY) > 100.0 ||

@@ -6,16 +6,23 @@
 #include "factory/parser_factory.h"
 #include "builders/json_builder.h"
 
-int main()
+int main(int argc, char* argv[])
 {
     std::string inputFile;
 
-    std::cout
-        << "Enter file path:\n";
+    if (argc > 1)
+    {
+        inputFile = argv[1];
+    }
+    else
+    {
+        std::cout
+            << "Enter file path:\n";
 
-    std::getline(
-        std::cin,
-        inputFile);
+        std::getline(
+            std::cin,
+            inputFile);
+    }
 
     auto parser =
         ParserFactory::create(

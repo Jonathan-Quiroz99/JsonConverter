@@ -4,7 +4,7 @@
 
 #include <string>
 
-class PositionConformParser : public BaseParser
+class RingPositionCycleParser : public BaseParser
 {
 private:
 
@@ -12,7 +12,7 @@ private:
 
 public:
 
-    explicit PositionConformParser(
+    explicit RingPositionCycleParser(
         const std::string& path);
 
     PlotData parse() override;

@@ -36,7 +36,7 @@
     <ClCompile Include="parsers\parser_face_wear.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parsers\PositionConformParser.cpp">
+    <ClCompile Include="parsers\RingPositionCycleParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="parsers\FaceClearanceConformParser.cpp">
@@ -88,7 +88,7 @@
     <ClInclude Include="parsers\pressure_conform_parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parsers\PositionConformParser.h">
+    <ClInclude Include="parsers\RingPositionCycleParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parsers\FaceClearanceConformParser.h">
