@@ -439,6 +439,7 @@ std::string JsonBuilder::buildStaticScatter3D(
     json << "}";
     json << "}";
     json << "}";
+    json << "}";
     return json.str();
 }
 
@@ -482,9 +483,11 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     json << "\"layout\":{";
 
-    json << "\"title\":\""
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.title
-        << "\",";
+        << "\"";
+    json << "},";
 
     /*
     ------------------------------------------------------------
@@ -495,23 +498,28 @@ std::string JsonBuilder::buildAnimatedSurface(
     json << "\"scene\":{";
 
     json << "\"xaxis\":{";
-    json << "\"title\":\""
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.xLabel
         << "\"";
+    json << "}";
     json << "},";
 
     json << "\"yaxis\":{";
-    json << "\"title\":\""
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.yLabel
         << "\"";
+    json << "}";
     json << "},";
 
     json << "\"zaxis\":{";
-    json << "\"title\":\""
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.zLabel
         << "\"";
     json << "}";
-
+    json << "}";
     json << "},";
 
     /*
@@ -659,17 +667,7 @@ std::string JsonBuilder::buildAnimatedSurface(
         json << "}";
     }
 
-    json << "],";
-
-    /*
-    ============================================================
-    CONFIG
-    ============================================================
-    */
-
-    json << "\"config\":{";
-    json << "\"responsive\":true";
-    json << "}";
+    json << "]";
 
     json << "}";
 
@@ -774,23 +772,37 @@ std::string JsonBuilder::buildAnimatedScatter3D(
 
     json << "\"layout\":{";
 
-    json << "\"title\":\""
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.title
-        << "\",";
+        << "\"";
+    json << "},";
 
     json << "\"scene\":{";
 
-    json << "\"xaxis\":{\"title\":\""
+    json << "\"xaxis\":{";
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.xLabel
-        << "\"},";
+        << "\"";
+    json << "}";
+    json << "},";
 
-    json << "\"yaxis\":{\"title\":\""
+    json << "\"yaxis\":{";
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.yLabel
-        << "\"},";
+        << "\"";
+    json << "}";
+    json << "},";
 
-    json << "\"zaxis\":{\"title\":\""
+    json << "\"zaxis\":{";
+    json << "\"title\":{";
+    json << "\"text\":\""
         << data.zLabel
-        << "\"}";
+        << "\"";
+    json << "}";
+    json << "}";
 
     json << "},";
 
@@ -921,17 +933,7 @@ std::string JsonBuilder::buildAnimatedScatter3D(
         json << "}";
     }
 
-    json << "],";
-
-    /*
-    ============================================================
-    CONFIG
-    ============================================================
-    */
-
-    json << "\"config\":{";
-    json << "\"responsive\":true";
-    json << "}";
+    json << "]";
 
     json << "}";
 
