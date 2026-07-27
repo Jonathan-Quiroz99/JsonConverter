@@ -613,7 +613,7 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     /*
     PLAY
-    */ 
+    */
 
     json << "{";
     json << "\"label\":\"\\u25B6\",";
@@ -631,7 +631,7 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     /*
     STOP
-    */ 
+    */
 
     json << ",{";
     json << "\"label\":\"\\u25A0\",";
@@ -797,25 +797,63 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     json << std::fixed
         << std::setprecision(6);
 
+    /*
+    ============================================================
+    COMPUTE AXIS RANGES AND TWIST RANGE ACROSS ALL FRAMES
+    ============================================================
+    */
+
+    double xRawMin = data.frames[0][0][0];
+    double xRawMax = data.frames[0][0][0];
+    double yRawMin = data.frames[0][0][1];
+    double yRawMax = data.frames[0][0][1];
+    double zRawMin = data.frames[0][0][2];
+    double zRawMax = data.frames[0][0][2];
+    double twistMin = data.frames[0][0][3];
+    double twistMax = data.frames[0][0][3];
+
+    for (const auto& frame : data.frames)
+    {
+        for (const auto& node : frame)
+        {
+            if (node[0] < xRawMin) xRawMin = node[0];
+            if (node[0] > xRawMax) xRawMax = node[0];
+            if (node[1] < yRawMin) yRawMin = node[1];
+            if (node[1] > yRawMax) yRawMax = node[1];
+            if (node[2] < zRawMin) zRawMin = node[2];
+            if (node[2] > zRawMax) zRawMax = node[2];
+            if (node[3] < twistMin) twistMin = node[3];
+            if (node[3] > twistMax) twistMax = node[3];
+        }
+    }
+
+    const double xPad = (xRawMax - xRawMin) * 0.05;
+    const double yPad = (yRawMax - yRawMin) * 0.05;
+    const double zPad = (zRawMax - zRawMin) * 0.05;
+
+    const double xMin = xRawMin - xPad;
+    const double xMax = xRawMax + xPad;
+    const double yMin = yRawMin - yPad;
+    const double yMax = yRawMax + yPad;
+    const double zMin = zRawMin - zPad;
+    const double zMax = zRawMax + zPad;
+
     json << "{";
 
     /*
     ============================================================
-    INITIAL TRACE
+    DATA
     ============================================================
     */
 
-    json << "\"data\":[{";
+    const auto& firstFrame = data.frames[0];
 
+    json << "\"data\":[{";
     json << "\"type\":\"scatter3d\",";
     json << "\"mode\":\"lines+markers\",";
+    json << "\"name\":\"Points\",";
 
-    /*
-    FRAME 0
-    */
-
-    const auto& firstFrame =
-        data.frames[0];
+    // X
 
     json << "\"x\":[";
     for (size_t i = 0; i < firstFrame.size(); i++)
@@ -825,6 +863,8 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     }
     json << "],";
 
+    // Y
+
     json << "\"y\":[";
     for (size_t i = 0; i < firstFrame.size(); i++)
     {
@@ -833,15 +873,77 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     }
     json << "],";
 
+    // Z
+
     json << "\"z\":[";
     for (size_t i = 0; i < firstFrame.size(); i++)
     {
         if (i > 0) json << ",";
         json << firstFrame[i][2];
     }
-    json << "]";
+    json << "],";
 
-    json << "}],";
+    // CUSTOM DATA (TWIST)
+
+    json << "\"customdata\":[";
+    for (size_t i = 0; i < firstFrame.size(); i++)
+    {
+        if (i > 0) json << ",";
+        json << firstFrame[i][3];
+    }
+    json << "],";
+
+    // HOVER TEMPLATE
+
+    json << "\"hovertemplate\":\"";
+    json << "Node #: %{pointNumber}<br>";
+    json << data.xLabel << ": %{x}<br>";
+    json << data.yLabel << ": %{y}<br>";
+    json << data.zLabel << ": %{z}<br>";
+    json << "Twist: %{customdata}\\u00b0";
+    json << "<extra></extra>\",";
+
+    // LINE
+
+    json << "\"line\":{";
+    json << "\"color\":\"#378ADD\",";
+    json << "\"width\":4";
+    json << "},";
+
+    // MARKER
+
+    json << "\"marker\":{";
+    json << "\"size\":7,";
+
+    json << "\"color\":[";
+    for (size_t i = 0; i < firstFrame.size(); i++)
+    {
+        if (i > 0) json << ",";
+        json << firstFrame[i][3];
+    }
+    json << "],";
+
+    json << "\"colorscale\":\"Jet\",";
+    json << "\"cmin\":" << twistMin << ",";
+    json << "\"cmax\":" << twistMax << ",";
+    json << "\"showscale\":true,";
+
+    json << "\"colorbar\":{";
+    json << "\"x\":1.02,";
+    json << "\"title\":{\"text\":\"Twist (\\u00b0)\"},";
+    json << "\"nticks\":10";
+    json << "},";
+
+    json << "\"opacity\":0.95,";
+
+    json << "\"line\":{";
+    json << "\"color\":\"#ffffff\",";
+    json << "\"width\":0.5";
+    json << "}";
+
+    json << "}";    // closes marker
+
+    json << "}],";  // closes trace and data array
 
     /*
     ============================================================
@@ -852,38 +954,61 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     json << "\"layout\":{";
 
     json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
+    json << "\"text\":\"" << data.title << "\"";
     json << "},";
+
+    /*
+    ------------------------------------------------------------
+    SCENE
+    ------------------------------------------------------------
+    */
 
     json << "\"scene\":{";
 
+    // ASPECT RATIO
+
+    json << "\"aspectmode\":\"manual\",";
+    json << "\"aspectratio\":{\"x\":1,\"y\":1,\"z\":1},";
+
+    // X AXIS
+
     json << "\"xaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
-    json << "}";
+    json << "\"title\":{\"text\":\"" << data.xLabel << "\"},";
+    json << "\"range\":[" << xMin << "," << xMax << "],";
+    json << "\"autorange\":false";
     json << "},";
+
+    // Y AXIS
 
     json << "\"yaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
-    json << "}";
+    json << "\"title\":{\"text\":\"" << data.yLabel << "\"},";
+    json << "\"range\":[" << yMin << "," << yMax << "],";
+    json << "\"autorange\":false";
     json << "},";
+
+    // Z AXIS
 
     json << "\"zaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.zLabel
-        << "\"";
-    json << "}";
+    json << "\"title\":{\"text\":\"" << data.zLabel << "\"},";
+    json << "\"range\":[" << zMin << "," << zMax << "],";
+    json << "\"autorange\":false";
+    json << "},";
+
+    // CAMERA
+
+    json << "\"camera\":{";
+    json << "\"eye\":{\"x\":1.8,\"y\":1.8,\"z\":0.7}";
     json << "}";
 
-    json << "},";
+    json << "},";   // closes scene
+
+    /*
+    ------------------------------------------------------------
+    MARGIN
+    ------------------------------------------------------------
+    */
+
+    json << "\"margin\":{\"t\":50,\"b\":60,\"l\":0,\"r\":0},";
 
     /*
     PLAY / STOP
@@ -891,51 +1016,74 @@ std::string JsonBuilder::buildAnimatedScatter3D(
 
     json << "\"updatemenus\":[{";
     json << "\"type\":\"buttons\",";
+    json << "\"direction\":\"left\",";
     json << "\"showactive\":false,";
+    json << "\"x\":0.0,";
+    json << "\"y\":-0.05,";
+    json << "\"xanchor\":\"left\",";
+    json << "\"yanchor\":\"top\",";
+    json << "\"pad\":{\"t\":10,\"r\":10},";
 
     json << "\"buttons\":[";
 
+    // PLAY
+
     json << "{";
-    json << "\"label\":\"Play\",";
+    json << "\"label\":\"\\u25B6\",";
     json << "\"method\":\"animate\",";
     json << "\"args\":[null,{";
     json << "\"mode\":\"immediate\",";
     json << "\"fromcurrent\":true,";
     json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{\"duration\":50,\"redraw\":true}";
+    json << "\"frame\":{";
+    json << "\"duration\":50,";
+    json << "\"redraw\":true";
+    json << "}";
     json << "}]";
     json << "}";
 
+    // STOP
+
     json << ",{";
-    json << "\"label\":\"Stop\",";
+    json << "\"label\":\"\\u25A0\",";
     json << "\"method\":\"animate\",";
     json << "\"args\":[[null],{";
     json << "\"mode\":\"immediate\",";
     json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{\"duration\":0,\"redraw\":false}";
+    json << "\"frame\":{";
+    json << "\"duration\":0,";
+    json << "\"redraw\":false";
+    json << "}";
     json << "}]";
     json << "}";
 
     json << "]";
-    json << "}],";
+    json << "}],";  // closes updatemenus
 
     /*
-    ============================================================
+    ------------------------------------------------------------
     SLIDER
-    ============================================================
+    ------------------------------------------------------------
     */
 
     json << "\"sliders\":[{";
     json << "\"active\":0,";
-    json << "\"currentvalue\":{\"prefix\":\"Frame: \"},";
+    json << "\"pad\":{\"t\":40,\"b\":10},";
+    json << "\"x\":0.05,";
+    json << "\"len\":0.9,";
+
+    json << "\"currentvalue\":{";
+    json << "\"prefix\":\"Crank Angle: \",";
+    json << "\"visible\":true,";
+    json << "\"xanchor\":\"center\",";
+    json << "\"font\":{\"size\":12}";
+    json << "},";
+
     json << "\"steps\":[";
 
     for (size_t i = 0; i < data.frames.size(); i++)
     {
-        if (i > 0)
-        {
-            json << ",";
-        }
+        if (i > 0) json << ",";
 
         json << "{";
         json << "\"label\":\"" << i << "\",";
@@ -943,15 +1091,18 @@ std::string JsonBuilder::buildAnimatedScatter3D(
         json << "\"args\":[[\"f" << i << "\"],{";
         json << "\"mode\":\"immediate\",";
         json << "\"transition\":{\"duration\":0},";
-        json << "\"frame\":{\"duration\":0,\"redraw\":true}";
+        json << "\"frame\":{";
+        json << "\"duration\":0,";
+        json << "\"redraw\":true";
+        json << "}";
         json << "}]";
         json << "}";
     }
 
     json << "]";
-    json << "}]";
+    json << "}]";   // closes sliders
 
-    json << "},";
+    json << "},";   // closes layout
 
     /*
     ============================================================
@@ -965,23 +1116,16 @@ std::string JsonBuilder::buildAnimatedScatter3D(
         frameIndex < data.frames.size();
         frameIndex++)
     {
-        if (frameIndex > 0)
-        {
-            json << ",";
-        }
+        if (frameIndex > 0) json << ",";
 
-        const auto& frame =
-            data.frames[frameIndex];
+        const auto& frame = data.frames[frameIndex];
 
         json << "{";
-
-        json << "\"name\":\"f"
-            << frameIndex
-            << "\",";
-
+        json << "\"name\":\"f" << frameIndex << "\",";
         json << "\"traces\":[0],";
-
         json << "\"data\":[{";
+
+        // X
 
         json << "\"x\":[";
         for (size_t i = 0; i < frame.size(); i++)
@@ -991,6 +1135,8 @@ std::string JsonBuilder::buildAnimatedScatter3D(
         }
         json << "],";
 
+        // Y
+
         json << "\"y\":[";
         for (size_t i = 0; i < frame.size(); i++)
         {
@@ -999,22 +1145,42 @@ std::string JsonBuilder::buildAnimatedScatter3D(
         }
         json << "],";
 
+        // Z
+
         json << "\"z\":[";
         for (size_t i = 0; i < frame.size(); i++)
         {
             if (i > 0) json << ",";
             json << frame[i][2];
         }
-        json << "]";
+        json << "],";
 
-        json << "}]";
+        // CUSTOM DATA (TWIST)
 
-        json << "}";
+        json << "\"customdata\":[";
+        for (size_t i = 0; i < frame.size(); i++)
+        {
+            if (i > 0) json << ",";
+            json << frame[i][3];
+        }
+        json << "],";
+
+        // MARKER COLOR (TWIST)
+
+        json << "\"marker\":{\"color\":[";
+        for (size_t i = 0; i < frame.size(); i++)
+        {
+            if (i > 0) json << ",";
+            json << frame[i][3];
+        }
+        json << "]}";
+
+        json << "}]";   // closes data trace and data array
+        json << "}";    // closes frame object
     }
 
-    json << "]";
-
-    json << "}";
+    json << "]";    // closes frames array
+    json << "}";    // closes root
 
     return json.str();
 }
