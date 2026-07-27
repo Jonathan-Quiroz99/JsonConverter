@@ -14,8 +14,8 @@ std::string JsonBuilder::build(
     case PlotType::Surface:
         return buildSurface(data);
 
-	case PlotType::Heatmap:
-		return buildHeatmap(data);
+    case PlotType::Heatmap:
+        return buildHeatmap(data);
 
     case PlotType::Scatter3D:
         return buildScatter3D(data);
@@ -424,7 +424,7 @@ std::string JsonBuilder::buildStaticScatter3D(
     // Y
     json << "\"yaxis\":{";
     json << "\"title\":{";
-	json << "\"text\":\""
+    json << "\"text\":\""
         << data.yLabel
         << "\"";
     json << "}";
@@ -456,6 +456,49 @@ std::string JsonBuilder::buildAnimatedSurface(
     json << std::fixed
         << std::setprecision(6);
 
+    /*
+    ============================================================
+    COMPUTE AXIS RANGES ACROSS ALL FRAMES
+    ============================================================
+    */
+
+    // X and Y use implicit 0-based indices from matrix dimensions.
+    // The range is therefore fixed by frame structure, not measured values.
+
+    const double xRawMin = 0.0;
+    const double xRawMax = static_cast<double>(data.frames[0][0].size()) - 1.0;
+    const double yRawMin = 0.0;
+    const double yRawMax = static_cast<double>(data.frames[0].size()) - 1.0;
+
+    const double xPad = (xRawMax - xRawMin) * 0.05;
+    const double yPad = (yRawMax - yRawMin) * 0.05;
+
+    const double xMin = xRawMin - xPad;
+    const double xMax = xRawMax + xPad;
+    const double yMin = yRawMin - yPad;
+    const double yMax = yRawMax + yPad;
+
+    // Z: scan every value across all frames for global min/max.
+
+    double zRawMin = data.frames[0][0][0];
+    double zRawMax = data.frames[0][0][0];
+
+    for (const auto& frame : data.frames)
+    {
+        for (const auto& row : frame)
+        {
+            for (double val : row)
+            {
+                if (val < zRawMin) zRawMin = val;
+                if (val > zRawMax) zRawMax = val;
+            }
+        }
+    }
+
+    const double zPad = (zRawMax - zRawMin) * 0.05;
+    const double zMin = zRawMin - zPad;
+    const double zMax = zRawMax + zPad;
+
     json << "{";
 
     /*
@@ -466,6 +509,22 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     json << "\"data\":[{";
     json << "\"type\":\"surface\",";
+    json << "\"colorscale\":\"Jet\",";
+    json << "\"cmin\":" << zRawMin << ",";
+    json << "\"cmax\":" << zRawMax << ",";
+    json << "\"showscale\":true,";
+
+    json << "\"colorbar\":{";
+    json << "\"x\":1.02,";
+    json << "\"title\":{\"text\":\"" << data.zLabel << "\"},";
+    json << "\"nticks\":10";
+    json << "},";
+
+    json << "\"hovertemplate\":\""
+        << data.xLabel << ": %{x}<br>"
+        << data.yLabel << ": %{y}<br>"
+        << data.zLabel << ": %{z}"
+        << "<extra></extra>\",";
 
     json << "\"z\":";
 
@@ -491,35 +550,47 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     /*
     ------------------------------------------------------------
-    AXES
+    SCENE
     ------------------------------------------------------------
     */
 
     json << "\"scene\":{";
 
-    json << "\"xaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
-    json << "}";
+    // CAMERA
+
+    json << "\"camera\":{";
+    json << "\"eye\":{\"x\":1.0,\"y\":1.0,\"z\":1.0}";
     json << "},";
+
+    // X AXIS
+
+    json << "\"xaxis\":{";
+    json << "\"title\":{\"text\":\"" << data.xLabel << "\"},";
+    json << "\"range\":[" << xMin << "," << xMax << "],";
+    json << "\"autorange\":false";
+    json << "},";
+
+    // Y AXIS
 
     json << "\"yaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
-    json << "}";
+    json << "\"title\":{\"text\":\"" << data.yLabel << "\"},";
+    json << "\"range\":[" << yMin << "," << yMax << "],";
+    json << "\"autorange\":false";
     json << "},";
 
+    // Z AXIS
+
     json << "\"zaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.zLabel
-        << "\"";
-    json << "}";
-    json << "}";
+    json << "\"title\":{\"text\":\"" << data.zLabel << "\"},";
+    json << "\"range\":[" << zMin << "," << zMax << "],";
+    json << "\"autorange\":false";
+    json << "},";
+
+    // ASPECT RATIO
+
+    json << "\"aspectmode\":\"manual\",";
+    json << "\"aspectratio\":{\"x\":1,\"y\":1,\"z\":1}";
+
     json << "},";
 
     /*
@@ -533,12 +604,16 @@ std::string JsonBuilder::buildAnimatedSurface(
     json << "\"type\":\"buttons\",";
     json << "\"direction\":\"left\",";
     json << "\"showactive\":false,";
+    json << "\"x\":0.0,";
+    json << "\"y\":0.0,";
+    json << "\"yanchor\":\"top\",";
+    json << "\"pad\":{\"t\":35,\"r\":10},";
 
     json << "\"buttons\":[";
 
     /*
     PLAY
-    */
+    */ 
 
     json << "{";
     json << "\"label\":\"\\u25B6\",";
@@ -548,7 +623,7 @@ std::string JsonBuilder::buildAnimatedSurface(
     json << "\"fromcurrent\":true,";
     json << "\"transition\":{\"duration\":0},";
     json << "\"frame\":{";
-	json << "\"duration\":50,"; // sets duration for each frame in milliseconds, 50 meanos 20 frames per second
+    json << "\"duration\":50,"; // sets duration for each frame in milliseconds, 50 meanos 20 frames per second
     json << "\"redraw\":true";
     json << "}";
     json << "}]";
@@ -556,7 +631,7 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     /*
     STOP
-    */
+    */ 
 
     json << ",{";
     json << "\"label\":\"\\u25A0\",";
@@ -584,8 +659,12 @@ std::string JsonBuilder::buildAnimatedSurface(
     json << "\"sliders\":[{";
 
     json << "\"active\":0,";
+    json << "\"pad\":{\"t\":5,\"b\":10},";
+    json << "\"x\":0.05,";
+    json << "\"len\":0.9,";
+
     json << "\"currentvalue\":{";
-    json << "\"prefix\":\"Frame: \"";
+    json << "\"prefix\":\"Crank Angle: \"";
     json << "},";
 
     json << "\"steps\":[";
