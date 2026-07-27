@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -44,21 +45,11 @@ int main(int argc, char* argv[])
     std::string json =
         JsonBuilder::build(data);
 
+    namespace fs = std::filesystem;
+
     std::string outputFile =
-        inputFile;
-
-    size_t pos =
-        outputFile.find_last_of('.');
-
-    if (pos != std::string::npos)
-    {
-        outputFile =
-            outputFile.substr(
-                0,
-                pos);
-    }
-
-    outputFile += ".json";
+        (fs::path(inputFile).parent_path() /
+            fs::path(inputFile).stem()).string() + ".json";
 
     std::ofstream out(
         outputFile);
