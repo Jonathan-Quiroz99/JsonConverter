@@ -103,7 +103,14 @@ std::string JsonBuilder::buildScatter(
             json << series.y[i];
         }
 
-        json << "]";
+        json << "],";
+
+        json << "\"line\":{\"width\":2},";
+        json << "\"marker\":{\"size\":2},";
+        json << "\"hovertemplate\":\""
+            << data.xLabel << ": %{x}<br>"
+            << series.name << ": %{y}"
+            << "<extra></extra>\"";
 
         json << "}";
     }
