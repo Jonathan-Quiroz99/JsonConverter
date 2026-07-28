@@ -19,9 +19,9 @@ PlotData SurfaceAnimParser::parse()
     std::string line;
     constexpr int HEADER_LINES = 5;
 
-    int NODES=0;           //read the nodes from the header
+    int NODES = 0;           //read the nodes from the header
     int COLUMNS = 0;       //set rows/columns below based on file name
-    int ROWS_PER_FRAME = 0;  
+    int ROWS_PER_FRAME = 0;
 
     if (!file.is_open())  return data;        //Not open, so return
 
@@ -78,8 +78,6 @@ PlotData SurfaceAnimParser::parse()
         }
     }
     data.plotType = PlotType::Surface;
-    data.xLabel = "Circumferential Node";
-    data.yLabel = "Axial Node";
 
     //UPPER CASE FILE PATH
     // Work on an uppercase copy for case-insensitive matching so we don't
@@ -94,45 +92,56 @@ PlotData SurfaceAnimParser::parse()
 
     if (upper_filepath.find("FACEPRES") != std::string::npos)
     {
+        data.xLabel = "Circumferential Node";
+        data.yLabel = "Axial Node";
         data.zLabel = "Pressure";
         data.units = "PSI";
-        COLUMNS = NODES;       //set rows/columns below based on file name
+        COLUMNS = NODES;
         ROWS_PER_FRAME = 101;
     }
     else if (upper_filepath.find("FACE_STRESS") != std::string::npos)
     {
+        data.xLabel = "Axial Node";
+        data.yLabel = "Circumferential Node";
         data.zLabel = "Von-Mises Stress";
         data.units = "PSI";
-        COLUMNS = 101;       //set rows/columns below based on file name
+        COLUMNS = 101;
         ROWS_PER_FRAME = NODES;
-
     }
     else if (upper_filepath.find("TOP_STRESS") != std::string::npos)
     {
+        data.xLabel = "Axial Node";
+        data.yLabel = "Circumferential Node";
         data.zLabel = "Von-Mises Stress";
         data.units = "PSI";
-        COLUMNS = 101;       //set rows/columns below based on file name
+        COLUMNS = 101;
         ROWS_PER_FRAME = NODES;
     }
     else if (upper_filepath.find("BOT_STRESS") != std::string::npos)
     {
+        data.xLabel = "Axial Node";
+        data.yLabel = "Circumferential Node";
         data.zLabel = "Von-Mises Stress";
         data.units = "PSI";
-        COLUMNS = 101;       //set rows/columns below based on file name
+        COLUMNS = 101;
         ROWS_PER_FRAME = NODES;
     }
     else if (upper_filepath.find("BRA_CYCLE") != std::string::npos)
     {
+        data.xLabel = "Circumferential Node";
+        data.yLabel = "Axial Node";
         data.zLabel = "Pressure";
         data.units = "PSI";
-        COLUMNS = NODES;       //set rows/columns below based on file name
+        COLUMNS = NODES;
         ROWS_PER_FRAME = 101;
     }
     else if (upper_filepath.find("TRA_CYCLE") != std::string::npos)
     {
+        data.xLabel = "Circumferential Node";
+        data.yLabel = "Axial Node";
         data.zLabel = "Pressure";
         data.units = "PSI";
-        COLUMNS = NODES;       //set rows/columns below based on file name
+        COLUMNS = NODES;
         ROWS_PER_FRAME = 101;
     }
 
