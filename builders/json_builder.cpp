@@ -1,4 +1,6 @@
 ﻿#include "json_builder.h"
+#include "layout/layout_writer.h"
+#include "animation/animation_controls_writer.h"
 
 #include <sstream>
 #include <iomanip>
@@ -119,43 +121,9 @@ std::string JsonBuilder::buildScatter(
 
     json << "\"layout\":{";
 
-    // ======================
-    // TITLE
-    // ======================
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
-    json << "},";
-
-    // ======================
-    // X AXIS
-    // ======================
-
-    json << "\"xaxis\":{";
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
-    json << "}";
-
-    json << "},";
-
-    // ======================
-    // Y AXIS
-    // ======================
-
-    json << "\"yaxis\":{";
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
-    json << "}";
-
-    json << "}";
+    LayoutWriter::write2DLayout(
+        json,
+        data);
 
     json << "}";
 
@@ -181,35 +149,11 @@ std::string JsonBuilder::buildStaticSurface(
     json << "\"type\":\"surface\",";
     json << "\"colorscale\":\"Viridis\",";
 
-    json << "\"z\":[";
+    json << "\"z\":";
 
-    for (size_t r = 0;
-        r < data.matrix.size();
-        r++)
-    {
-        if (r)
-        {
-            json << ",";
-        }
-
-        json << "[";
-
-        for (size_t c = 0;
-            c < data.matrix[r].size();
-            c++)
-        {
-            if (c)
-            {
-                json << ",";
-            }
-
-            json << data.matrix[r][c];
-        }
-
-        json << "]";
-    }
-
-    json << "]";
+    writeMatrix(
+        json,
+        data.matrix);
 
     json << "}";
 
@@ -217,59 +161,9 @@ std::string JsonBuilder::buildStaticSurface(
 
     json << "\"layout\":{";
 
-    // ======================
-    // TITLE
-    // ======================
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
-    json << "},";
-
-    // ======================
-    // SCENE
-    // ======================
-
-    json << "\"scene\":{";
-
-    // X
-
-    json << "\"xaxis\":{";
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
-    json << "}";
-
-    json << "},";
-
-    // Y
-
-    json << "\"yaxis\":{";
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
-    json << "}";
-
-    json << "},";
-
-    // Z
-
-    json << "\"zaxis\":{";
-
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.zLabel
-        << "\"";
-    json << "}";
-
-    json << "}";
-
-    json << "}";
+    LayoutWriter::write3DLayout(
+        json,
+        data);
 
     json << "}";
 
@@ -281,73 +175,40 @@ std::string JsonBuilder::buildStaticSurface(
 std::string JsonBuilder::buildHeatmap(
     const PlotData& data)
 {
-    // For simplicity, we can reuse the surface plot structure
-    // and just change the type to "heatmap".
     std::ostringstream json;
+
     json << std::fixed
         << std::setprecision(6);
+
     json << "{";
+
     json << "\"data\":[";
+
     json << "{";
+
     json << "\"type\":\"heatmap\",";
     json << "\"colorscale\":\"Viridis\",";
-    json << "\"z\":[";
-    for (size_t r = 0;
-        r < data.matrix.size();
-        r++)
-    {
-        if (r)
-        {
-            json << ",";
-        }
-        json << "[";
-        for (size_t c = 0;
-            c < data.matrix[r].size();
-            c++)
-        {
-            if (c)
-            {
-                json << ",";
-            }
-            json << data.matrix[r][c];
-        }
-        json << "]";
-    }
-    json << "]";
+
+    json << "\"z\":";
+
+    writeMatrix(
+        json,
+        data.matrix);
+
     json << "}";
+
     json << "],";
-    // Layout can be similar to surface plot
+
     json << "\"layout\":{";
-    // ======================
-    // TITLE
-    // ======================
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
-    json << "},";
-    // ======================
-    // X AXIS
-    // ======================
-    json << "\"xaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
+
+    LayoutWriter::write2DLayout(
+        json,
+        data);
+
     json << "}";
-    json << "},";
-    // ======================
-    // Y AXIS
-    // ======================
-    json << "\"yaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
+
     json << "}";
-    json << "}";
-    json << "}";
-    json << "}";
+
     return json.str();
 }
 
@@ -355,27 +216,36 @@ std::string JsonBuilder::buildStaticScatter3D(
     const PlotData& data)
 {
     std::ostringstream json;
+
     json << std::fixed
         << std::setprecision(6);
+
     json << "{\n";
+
     json << "\"data\":[\n";
+
     for (size_t s = 0;
         s < data.series.size();
         s++)
     {
         const auto& series =
             data.series[s];
+
         if (s > 0)
         {
             json << ",";
         }
+
         json << "{";
+
         json << "\"type\":\"scatter3d\",";
         json << "\"mode\":\"markers\",";
         json << "\"name\":\""
             << series.name
             << "\",";
+
         json << "\"x\":[";
+
         for (size_t i = 0;
             i < series.x.size();
             i++)
@@ -383,8 +253,11 @@ std::string JsonBuilder::buildStaticScatter3D(
             if (i) json << ",";
             json << series.x[i];
         }
+
         json << "],";
+
         json << "\"y\":[";
+
         for (size_t i = 0;
             i < series.y.size();
             i++)
@@ -392,8 +265,11 @@ std::string JsonBuilder::buildStaticScatter3D(
             if (i) json << ",";
             json << series.y[i];
         }
+
         json << "],";
+
         json << "\"z\":[";
+
         for (size_t i = 0;
             i < series.z.size();
             i++)
@@ -401,52 +277,24 @@ std::string JsonBuilder::buildStaticScatter3D(
             if (i) json << ",";
             json << series.z[i];
         }
+
         json << "]";
+
         json << "}";
     }
-    // Layout can be similar to surface plot
-    // with scene containing xaxis, yaxis, zaxis
+
     json << "],";
+
     json << "\"layout\":{";
-    // ======================
-    // TITLE
-    // ======================
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
-    json << "},";
-    // ======================
-    // SCENE
-    // ======================
-    json << "\"scene\":{";
-    // X
-    json << "\"xaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.xLabel
-        << "\"";
+
+    LayoutWriter::write3DLayout(
+        json,
+        data);
+
     json << "}";
-    json << "},";
-    // Y
-    json << "\"yaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.yLabel
-        << "\"";
+
     json << "}";
-    json << "},";
-    // Z
-    json << "\"zaxis\":{";
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.zLabel
-        << "\"";
-    json << "}";
-    json << "}";
-    json << "}";
-    json << "}";
-    json << "}";
+
     return json.str();
 }
 
@@ -549,11 +397,11 @@ std::string JsonBuilder::buildAnimatedSurface(
 
     json << "\"layout\":{";
 
-    json << "\"title\":{";
-    json << "\"text\":\""
-        << data.title
-        << "\"";
-    json << "},";
+    LayoutWriter::writeTitle(
+        json,
+        data.title);
+
+    json << ",";
 
     /*
     ------------------------------------------------------------
@@ -561,44 +409,17 @@ std::string JsonBuilder::buildAnimatedSurface(
     ------------------------------------------------------------
     */
 
-    json << "\"scene\":{";
+    LayoutWriter::writeAnimatedScene(
+        json,
+        data,
+        xMin,
+        xMax,
+        yMin,
+        yMax,
+        zMin,
+        zMax);
 
-    // CAMERA
-
-    json << "\"camera\":{";
-    json << "\"eye\":{\"x\":1.0,\"y\":1.0,\"z\":1.0}";
-    json << "},";
-
-    // X AXIS
-
-    json << "\"xaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.xLabel << "\"},";
-    json << "\"range\":[" << xMin << "," << xMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // Y AXIS
-
-    json << "\"yaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.yLabel << "\"},";
-    json << "\"range\":[" << yMin << "," << yMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // Z AXIS
-
-    json << "\"zaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.zLabel << "\"},";
-    json << "\"range\":[" << zMin << "," << zMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // ASPECT RATIO
-
-    json << "\"aspectmode\":\"manual\",";
-    json << "\"aspectratio\":{\"x\":1,\"y\":1,\"z\":1}";
-
-    json << "},";
+    json << ",";
 
     /*
     ------------------------------------------------------------
@@ -606,56 +427,10 @@ std::string JsonBuilder::buildAnimatedSurface(
     ------------------------------------------------------------
     */
 
-    json << "\"updatemenus\":[{";
+    AnimationControlsWriter::writeButtons(
+        json);
 
-    json << "\"type\":\"buttons\",";
-    json << "\"direction\":\"left\",";
-    json << "\"showactive\":false,";
-    json << "\"x\":0.0,";
-    json << "\"y\":0.0,";
-    json << "\"yanchor\":\"top\",";
-    json << "\"pad\":{\"t\":35,\"r\":10},";
-
-    json << "\"buttons\":[";
-
-    /*
-    PLAY
-    */
-
-    json << "{";
-    json << "\"label\":\"\\u25B6\",";
-    json << "\"method\":\"animate\",";
-    json << "\"args\":[null,{";
-    json << "\"mode\":\"immediate\",";
-    json << "\"fromcurrent\":true,";
-    json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{";
-    json << "\"duration\":50,"; // sets duration for each frame in milliseconds, 50 meanos 20 frames per second
-    json << "\"redraw\":true";
-    json << "}";
-    json << "}]";
-    json << "}";
-
-    /*
-    STOP
-    */
-
-    json << ",{";
-    json << "\"label\":\"\\u25A0\",";
-    json << "\"method\":\"animate\",";
-    json << "\"args\":[[null],{";
-    json << "\"mode\":\"immediate\",";
-    json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{";
-    json << "\"duration\":0,";
-    json << "\"redraw\":false";
-    json << "}";
-    json << "}]";
-    json << "}";
-
-    json << "]";
-
-    json << "}],";
+    json << ",";
 
     /*
     ------------------------------------------------------------
@@ -663,57 +438,14 @@ std::string JsonBuilder::buildAnimatedSurface(
     ------------------------------------------------------------
     */
 
-    json << "\"sliders\":[{";
+    AnimationControlsWriter::writeSlider(
+        json,
+        data,
+        5);
 
-    json << "\"active\":0,";
-    json << "\"pad\":{\"t\":5,\"b\":10},";
-    json << "\"x\":0.05,";
-    json << "\"len\":0.9,";
+    json << "}";
 
-    json << "\"currentvalue\":{";
-    json << "\"prefix\":\"Crank Angle: \"";
-    json << "},";
-
-    json << "\"steps\":[";
-
-    for (size_t i = 0;
-        i < data.frames.size();
-        i++)
-    {
-        if (i > 0)
-        {
-            json << ",";
-        }
-
-        json << "{";
-
-        json << "\"label\":\""
-            << i
-            << "\",";
-
-        json << "\"method\":\"animate\",";
-
-        json << "\"args\":[[\"f"
-            << i
-            << "\"],{";
-
-        json << "\"mode\":\"immediate\",";
-        json << "\"transition\":{\"duration\":0},";
-        json << "\"frame\":{";
-        json << "\"duration\":0,";
-        json << "\"redraw\":true";
-        json << "}";
-
-        json << "}]";
-
-        json << "}";
-    }
-
-    json << "]";
-
-    json << "}]";
-
-    json << "},";
+    json << ",";
 
     /*
     ============================================================

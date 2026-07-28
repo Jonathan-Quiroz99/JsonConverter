@@ -125,7 +125,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="builders\animation\animation_controls_writer.cpp" />
+    <ClCompile Include="builders\animation\animation_frames_writer.cpp" />
     <ClCompile Include="builders\json_builder.cpp" />
+    <ClCompile Include="builders\layout\layout_writer.cpp" />
     <ClCompile Include="factory\parser_factory.cpp" />
     <ClCompile Include="JsonConverter.cpp" />
     <ClCompile Include="parsers\FaceClearanceConformParser.cpp" />
@@ -141,7 +144,10 @@
     <None Include="file_detector.ch" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="builders\animation\animation_controls_writer.h" />
+    <ClInclude Include="builders\animation\animation_frames_writer.h" />
     <ClInclude Include="builders\json_builder.h" />
+    <ClInclude Include="builders\layout\layout_writer.h" />
     <ClInclude Include="config\file_type.h" />
     <ClInclude Include="factory\parser_factory.h" />
     <ClInclude Include="models\plot_data.h" />

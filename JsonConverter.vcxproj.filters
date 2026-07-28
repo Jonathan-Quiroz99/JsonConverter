@@ -51,6 +51,15 @@
     <ClCompile Include="parsers\Scatter3dAnimParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="builders\layout\layout_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="builders\animation\animation_controls_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="builders\animation\animation_frames_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="file_detector.ch">
@@ -101,6 +110,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="parsers\Scatter3dAnimParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="builders\layout\layout_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="builders\animation\animation_controls_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="builders\animation\animation_frames_writer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
