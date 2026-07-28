@@ -1,6 +1,7 @@
 ﻿#include "json_builder.h"
 #include "layout/layout_writer.h"
 #include "animation/animation_controls_writer.h"
+#include "animation/animation_frames_writer.h"
 
 #include <sstream>
 #include <iomanip>
@@ -453,39 +454,9 @@ std::string JsonBuilder::buildAnimatedSurface(
     ============================================================
     */
 
-    json << "\"frames\":[";
-
-    for (size_t i = 0;
-        i < data.frames.size();
-        i++)
-    {
-        if (i > 0)
-        {
-            json << ",";
-        }
-
-        json << "{";
-
-        json << "\"name\":\"f"
-            << i
-            << "\",";
-
-        json << "\"traces\":[0],";
-
-        json << "\"data\":[{";
-
-        json << "\"z\":";
-
-        writeMatrix(
-            json,
-            data.frames[i]);
-
-        json << "}]";
-
-        json << "}";
-    }
-
-    json << "]";
+    AnimationFramesWriter::writeSurfaceFrames(
+        json,
+        data);
 
     json << "}";
 
@@ -686,60 +657,16 @@ std::string JsonBuilder::buildAnimatedScatter3D(
 
     /*
     ============================================================
-    LAYOUT
+	LAYOUT AND SCENE
     ============================================================
     */
 
     json << "\"layout\":{";
 
-    json << "\"title\":{";
-    json << "\"text\":\"" << data.title << "\"";
-    json << "},";
-
-    /*
-    ------------------------------------------------------------
-    SCENE
-    ------------------------------------------------------------
-    */
-
-    json << "\"scene\":{";
-
-    // ASPECT RATIO
-
-    json << "\"aspectmode\":\"manual\",";
-    json << "\"aspectratio\":{\"x\":1,\"y\":1,\"z\":1},";
-
-    // X AXIS
-
-    json << "\"xaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.xLabel << "\"},";
-    json << "\"range\":[" << xMin << "," << xMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // Y AXIS
-
-    json << "\"yaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.yLabel << "\"},";
-    json << "\"range\":[" << yMin << "," << yMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // Z AXIS
-
-    json << "\"zaxis\":{";
-    json << "\"title\":{\"text\":\"" << data.zLabel << "\"},";
-    json << "\"range\":[" << zMin << "," << zMax << "],";
-    json << "\"autorange\":false";
-    json << "},";
-
-    // CAMERA
-
-    json << "\"camera\":{";
-    json << "\"eye\":{\"x\":1.8,\"y\":1.8,\"z\":0.7}";
-    json << "}";
-
-    json << "},";   // closes scene
+    LayoutWriter::write3DLayout(
+        json,
+		data);
+	json << "}";
 
     /*
     ------------------------------------------------------------
@@ -747,57 +674,23 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     ------------------------------------------------------------
     */
 
-    json << "\"margin\":{\"t\":50,\"b\":60,\"l\":0,\"r\":0},";
+    LayoutWriter::writeMargin(
+        json,
+        40,  // top
+        40,  // bottom
+        40,  // left
+        40); // right
 
     /*
-    PLAY / STOP
-    */
+     ------------------------------------------------------------
+     PLAY / STOP
+     ------------------------------------------------------------
+     */
 
-    json << "\"updatemenus\":[{";
-    json << "\"type\":\"buttons\",";
-    json << "\"direction\":\"left\",";
-    json << "\"showactive\":false,";
-    json << "\"x\":0.0,";
-    json << "\"y\":-0.05,";
-    json << "\"xanchor\":\"left\",";
-    json << "\"yanchor\":\"top\",";
-    json << "\"pad\":{\"t\":10,\"r\":10},";
+    AnimationControlsWriter::writeButtons(
+        json);
 
-    json << "\"buttons\":[";
-
-    // PLAY
-
-    json << "{";
-    json << "\"label\":\"\\u25B6\",";
-    json << "\"method\":\"animate\",";
-    json << "\"args\":[null,{";
-    json << "\"mode\":\"immediate\",";
-    json << "\"fromcurrent\":true,";
-    json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{";
-    json << "\"duration\":50,";
-    json << "\"redraw\":true";
-    json << "}";
-    json << "}]";
-    json << "}";
-
-    // STOP
-
-    json << ",{";
-    json << "\"label\":\"\\u25A0\",";
-    json << "\"method\":\"animate\",";
-    json << "\"args\":[[null],{";
-    json << "\"mode\":\"immediate\",";
-    json << "\"transition\":{\"duration\":0},";
-    json << "\"frame\":{";
-    json << "\"duration\":0,";
-    json << "\"redraw\":false";
-    json << "}";
-    json << "}]";
-    json << "}";
-
-    json << "]";
-    json << "}],";  // closes updatemenus
+    json << ",";
 
     /*
     ------------------------------------------------------------
@@ -805,43 +698,12 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     ------------------------------------------------------------
     */
 
-    json << "\"sliders\":[{";
-    json << "\"active\":0,";
-    json << "\"pad\":{\"t\":40,\"b\":10},";
-    json << "\"x\":0.05,";
-    json << "\"len\":0.9,";
+    AnimationControlsWriter::writeSlider(
+        json,
+        data,
+        40);
 
-    json << "\"currentvalue\":{";
-    json << "\"prefix\":\"Crank Angle: \",";
-    json << "\"visible\":true,";
-    json << "\"xanchor\":\"center\",";
-    json << "\"font\":{\"size\":12}";
     json << "},";
-
-    json << "\"steps\":[";
-
-    for (size_t i = 0; i < data.frames.size(); i++)
-    {
-        if (i > 0) json << ",";
-
-        json << "{";
-        json << "\"label\":\"" << i << "\",";
-        json << "\"method\":\"animate\",";
-        json << "\"args\":[[\"f" << i << "\"],{";
-        json << "\"mode\":\"immediate\",";
-        json << "\"transition\":{\"duration\":0},";
-        json << "\"frame\":{";
-        json << "\"duration\":0,";
-        json << "\"redraw\":true";
-        json << "}";
-        json << "}]";
-        json << "}";
-    }
-
-    json << "]";
-    json << "}]";   // closes sliders
-
-    json << "},";   // closes layout
 
     /*
     ============================================================
@@ -849,77 +711,11 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     ============================================================
     */
 
-    json << "\"frames\":[";
+    AnimationFramesWriter::writeScatter3DFrames(
+        json,
+        data);
 
-    for (size_t frameIndex = 0;
-        frameIndex < data.frames.size();
-        frameIndex++)
-    {
-        if (frameIndex > 0) json << ",";
-
-        const auto& frame = data.frames[frameIndex];
-
-        json << "{";
-        json << "\"name\":\"f" << frameIndex << "\",";
-        json << "\"traces\":[0],";
-        json << "\"data\":[{";
-
-        // X
-
-        json << "\"x\":[";
-        for (size_t i = 0; i < frame.size(); i++)
-        {
-            if (i > 0) json << ",";
-            json << frame[i][0];
-        }
-        json << "],";
-
-        // Y
-
-        json << "\"y\":[";
-        for (size_t i = 0; i < frame.size(); i++)
-        {
-            if (i > 0) json << ",";
-            json << frame[i][1];
-        }
-        json << "],";
-
-        // Z
-
-        json << "\"z\":[";
-        for (size_t i = 0; i < frame.size(); i++)
-        {
-            if (i > 0) json << ",";
-            json << frame[i][2];
-        }
-        json << "],";
-
-        // CUSTOM DATA (TWIST)
-
-        json << "\"customdata\":[";
-        for (size_t i = 0; i < frame.size(); i++)
-        {
-            if (i > 0) json << ",";
-            json << frame[i][3];
-        }
-        json << "],";
-
-        // MARKER COLOR (TWIST)
-
-        json << "\"marker\":{\"color\":[";
-        for (size_t i = 0; i < frame.size(); i++)
-        {
-            if (i > 0) json << ",";
-            json << frame[i][3];
-        }
-        json << "]}";
-
-        json << "}]";   // closes data trace and data array
-        json << "}";    // closes frame object
-    }
-
-    json << "]";    // closes frames array
-    json << "}";    // closes root
+    json << "}";
 
     return json.str();
 }
