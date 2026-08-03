@@ -2,7 +2,10 @@
 
 void AnimationControlsWriter::writeButtons(
     std::ostringstream& json,
-    int playDuration)
+    int playDuration,
+    double y,
+    int padTop,
+    const std::string& xanchor)
 {
     json << "\"updatemenus\":[{";
 
@@ -10,9 +13,15 @@ void AnimationControlsWriter::writeButtons(
     json << "\"direction\":\"left\",";
     json << "\"showactive\":false,";
     json << "\"x\":0.0,";
-    json << "\"y\":0.0,";
+    json << "\"y\":" << y << ",";
+
+    if (!xanchor.empty())
+    {
+        json << "\"xanchor\":\"" << xanchor << "\",";
+    }
+
     json << "\"yanchor\":\"top\",";
-    json << "\"pad\":{\"t\":35,\"r\":10},";
+    json << "\"pad\":{\"t\":" << padTop << ",\"r\":10},";
 
     json << "\"buttons\":[";
 
@@ -66,7 +75,10 @@ void AnimationControlsWriter::writeSlider(
     json << "\"len\":0.9,";
 
     json << "\"currentvalue\":{";
-    json << "\"prefix\":\"" << prefix << "\"";
+    json << "\"prefix\":\"" << prefix << "\",";
+    json << "\"visible\":true,";
+    json << "\"xanchor\":\"center\",";
+    json << "\"font\":{\"size\":12}";
     json << "},";
 
     json << "\"steps\":[";
