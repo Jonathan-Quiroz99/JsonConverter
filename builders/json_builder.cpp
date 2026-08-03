@@ -657,16 +657,29 @@ std::string JsonBuilder::buildAnimatedScatter3D(
 
     /*
     ============================================================
-	LAYOUT AND SCENE
+    LAYOUT AND SCENE
     ============================================================
     */
 
     json << "\"layout\":{";
 
-    LayoutWriter::write3DLayout(
+    LayoutWriter::writeTitle(
         json,
-		data);
-	json << "}";
+        data.title);
+
+    json << ",";
+
+    LayoutWriter::writeAnimatedScene(
+        json,
+        data,
+        xMin,
+        xMax,
+        yMin,
+        yMax,
+        zMin,
+        zMax);
+
+    json << ",";
 
     /*
     ------------------------------------------------------------
@@ -676,10 +689,12 @@ std::string JsonBuilder::buildAnimatedScatter3D(
 
     LayoutWriter::writeMargin(
         json,
-        40,  // top
-        40,  // bottom
-        40,  // left
-        40); // right
+        50,  // top
+        60,  // bottom
+        0,   // left
+        0);  // right
+
+    json << ",";
 
     /*
      ------------------------------------------------------------
@@ -688,7 +703,11 @@ std::string JsonBuilder::buildAnimatedScatter3D(
      */
 
     AnimationControlsWriter::writeButtons(
-        json);
+        json,
+        50,
+        -0.05,
+        10,
+        "left");
 
     json << ",";
 
@@ -701,7 +720,8 @@ std::string JsonBuilder::buildAnimatedScatter3D(
     AnimationControlsWriter::writeSlider(
         json,
         data,
-        40);
+        40,
+        "Crank Angle: ");
 
     json << "},";
 
